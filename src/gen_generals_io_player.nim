@@ -24,6 +24,17 @@ const
   RedialAttempts = 6
   RegisterRepeats = 10
   RegisterSpacingMs = 1000.0
+  ReceiveTimeoutMs = 5000
+    ## No blocking read without a bound. whisky applies this timeout to the
+    ## FRAME HEADER read only, so it fires when nothing has started arriving
+    ## and can never cut a frame in half; it returns `none(Message)`.
+  SilenceBudgetMs = 240_000.0
+    ## How long total silence is allowed before this container leaves. The
+    ## game pod always closes -- but a half-open TCP connection (a pod killed
+    ## without a FIN) delivers no close frame and no error, and an unbounded
+    ## `receiveMessage` would park here until the platform killed the pod.
+    ## Comfortably above the longest legitimate quiet: the 100 s lobby join
+    ## wait plus its registration grace.
 
 when isMainModule:
   var url = getEnv("COWORLD_PLAYER_WS_URL")
@@ -82,10 +93,11 @@ when isMainModule:
 
   var redials = 0
   var running = true
+  var lastTraffic = epochTime()
   while running:
     var received: Option[Message]
     try:
-      received = socket.receiveMessage()
+      received = socket.receiveMessage(ReceiveTimeoutMs)
     except CatchableError as error:
       ## whisky RAISES on a close frame or a truncated read, and mummy's
       ## `send` only queues: the game's `quit(0)` can outrun the flushed
@@ -110,8 +122,14 @@ when isMainModule:
       sendRegistration(socket)
       continue
     if received.isNone:
-      echo "gen-generals-io player: connection closed, exiting"
-      break
+      ## An idle tick, not a close: whisky returns none ONLY on the header
+      ## timeout (a close frame raises, and is handled above).
+      if (epochTime() - lastTraffic) * 1000.0 >= SilenceBudgetMs:
+        echo "gen-generals-io player: no traffic for ",
+          int(SilenceBudgetMs / 1000.0), "s, exiting"
+        break
+      continue
+    lastTraffic = epochTime()
     let message = received.get()
     ## The Ready packet (0x85) after each received frame is legitimate here
     ## because this seat never sends inputs: the server computes every move.
