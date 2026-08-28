@@ -1,2 +1,14 @@
 nim.cfg
 dist/
+replay-viewer/dist/
+nimcache/
+*.o
+*.exe
+probe
+probe2
+probe3
+probe4
+tmp/
+node_modules/
+viewer-smoke.json
+viewer-smoke.png
