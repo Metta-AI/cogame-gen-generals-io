@@ -10,18 +10,21 @@ import generals/replay_runtime
 
 const Emoji = "\xF0\x9F\x91\x91"
 
-proc freshSim(seed = 1734029581): Sim =
+proc freshSim(seed = 1734029581, startWait = -1): Sim =
   var config = defaultGameConfig()
   config.seed = seed
+  if startWait >= 0:
+    config.startWaitTicks = startWait
   config.players = @[]
   for seat in 0 ..< Seats:
     config.players.add(PlayerConfig(name: "seat-" & $seat))
   gensim.initSim(config)
 
 proc recordEpisode(seed: int, kinds: array[Seats, ScriptKind],
-    stopAt = -1, faultAt = -1, notes = false): (string, Sim) =
+    stopAt = -1, faultAt = -1, notes = false,
+    startWait = -1): (string, Sim) =
   ## Exactly what `server.nim` writes, minus the sockets.
-  var sim = freshSim(seed)
+  var sim = freshSim(seed, startWait)
   var writer = initReplayWriter(sim.config.configJson())
   for seat in 0 ..< Seats:
     writer.writeJoin(seat, sim.names[seat], "")
@@ -179,6 +182,54 @@ suite "the replay round trip":
     check seen.getOrDefault("growth") >= 1
     check seen.getOrDefault("citytaken") >= 1
     check seen.getOrDefault("generalspotted") >= 1
+
+suite "playback opens at the game start":
+  ## Acceptance checklist 13, third bullet. The probe is a replay whose game
+  ## start is LATE — 300 presentation ticks of lobby prefix instead of the
+  ## shipped 48 — because a 1-tick lobby cannot show a runtime that dwells
+  ## through the prefix (cogame-pommerman / cogame-magent-battle, 2026-08-27).
+  test "the cursor opens at startTick and every seek is clamped there":
+    let (bytes, _) = recordEpisode(1734029581,
+      [skSprawl, skCrown, skSprawl, skCrown], startWait = 300)
+    let data = parseReplayBytes(bytes)
+    var session = initReplaySession(data)
+    check session.startTick == 300
+    check session.cursor == session.startTick
+    check session.sim.phase == phPlaying
+    ## The restart control and the `,` key.
+    session.applyCommand(",")
+    check session.cursor == session.startTick
+    ## A scrub click landing anywhere in the prefix, and step-back at the open.
+    session.seekTo(0)
+    check session.cursor == session.startTick
+    session.seekTo(-500)
+    check session.cursor == session.startTick
+    session.applyCommand("b")
+    check session.cursor == session.startTick
+    ## The loop wrap.
+    session.loop = true
+    session.playing = true
+    session.seekTo(session.endTick)
+    session.advance()
+    check session.cursor == session.startTick
+
+  test "playing forward moves the board on the very first frames":
+    let (bytes, _) = recordEpisode(1734029581,
+      [skSprawl, skCrown, skSprawl, skCrown], startWait = 300)
+    var session = initReplaySession(parseReplayBytes(bytes))
+    let openingHash = session.sim.gameHash()
+    for i in 0 ..< 3:
+      session.advance()
+    check session.sim.turn == 3
+    check session.sim.gameHash() != openingHash
+
+  test "the hash-checked re-simulation still runs every recorded frame":
+    let (bytes, sim) = recordEpisode(1734029581,
+      [skSprawl, skCrown, skSprawl, skCrown], startWait = 300)
+    var session = initReplaySession(parseReplayBytes(bytes))
+    session.seekTo(session.endTick)
+    check session.player.hashMismatchTick == -1
+    check session.sim.turn == sim.turn
 
 suite "strict UTF-8 forensics":
   test "replay_summary.py parses a replay whose caps are full of emoji":

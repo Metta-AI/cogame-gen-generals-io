@@ -66,7 +66,9 @@ proc frameContextOf(): FrameContext =
     fastForward: session.fastForward,
     transportEnabled: true,
     mismatchTick: session.player.hashMismatchTick,
-    lobbyCountdown: max(0, (session.startTick - session.cursor) div ReplayFps),
+    # Playback opens at the game start and no seek can reach the lobby prefix
+    # (`replay_runtime.seekTo`), so the curtain never counts down on a replay.
+    lobbyCountdown: 0,
     lulls: session.player.lullSpans,
     beats: beats,
     lead: session.player.leadSeries,

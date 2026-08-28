@@ -194,7 +194,13 @@ proc initReplaySession*(data: ReplayData): ReplaySession =
   result.startTick = result.sim.config.startWaitTicks
   result.endTick = result.startTick + result.player.endTurn +
     result.sim.config.gameOverTicks
-  result.cursor = 0
+  ## Playback OPENS at the game start, never in the recorded lobby: the
+  ## prefix carries no board movement, and a runtime that walks it at
+  ## presentation cadence sits frozen on its first tick until someone scrubs
+  ## (cogame-pommerman / cogame-magent-battle, 2026-08-27). The hash-checked
+  ## re-simulation below still runs every recorded frame from turn 0.
+  result.cursor = result.startTick
+  result.sim.phase = phPlaying
   result.playing = true
   result.speed = 1
 
@@ -204,7 +210,11 @@ proc turnAt(session: ReplaySession, cursor: int): int =
 proc seekTo*(session: var ReplaySession, tick: int) =
   ## Backwards is a re-simulation from turn 0: 240 turns of integer work on
   ## 160 cells is under a millisecond, so a seek is instant and exact.
-  let target = clamp(tick, 0, session.endTick)
+  ##
+  ## EVERY seek is clamped to [startTick, endTick] — the restart control, the
+  ## keyboard, a scrub click and the loop all land on the game start, matching
+  ## the scrubber axis (`st`), which already skips the dead lobby.
+  let target = clamp(tick, session.startTick, session.endTick)
   let wanted = session.turnAt(target)
   if wanted < session.sim.turn:
     session.rebuild()
@@ -216,12 +226,10 @@ proc seekTo*(session: var ReplaySession, tick: int) =
     ## on playback (the particle-worlds r2 scar).
     session.sim.applyWallClockStop(session.player.stopTurn)
   session.cursor = target
-  ## Presentation phase: the lobby before the first turn, gameover once the
-  ## recorded episode has run out. The starter's Lobby -> Playing -> GameOver
-  ## machine, driven off the cursor rather than a live clock.
-  if target < session.startTick:
-    session.sim.phase = phLobby
-  elif session.sim.done or wanted >= session.player.endTurn:
+  ## Presentation phase: playing from the game start, gameover once the
+  ## recorded episode has run out. The cursor can no longer reach the lobby
+  ## prefix, so `phLobby` belongs to the live server alone.
+  if session.sim.done or wanted >= session.player.endTurn:
     session.sim.phase = phGameOver
   else:
     session.sim.phase = phPlaying
@@ -232,8 +240,8 @@ proc applyCommand*(session: var ReplaySession, command: string) =
     return
   case command[0]
   of ' ': session.playing = not session.playing
-  of ',': session.seekTo(0)
-  of 'b': session.seekTo(max(0, session.cursor - 1))
+  of ',': session.seekTo(session.startTick)
+  of 'b': session.seekTo(session.cursor - 1)
   of '.': session.seekTo(session.cursor + 5 * ReplayFps)
   of 'e': session.seekTo(session.endTick)
   of 'r': session.loop = not session.loop
@@ -265,7 +273,7 @@ proc advance*(session: var ReplaySession) =
   for i in 0 ..< steps:
     if session.cursor >= session.endTick:
       if session.loop:
-        session.seekTo(0)
+        session.seekTo(session.startTick)
       else:
         session.playing = false
       break
