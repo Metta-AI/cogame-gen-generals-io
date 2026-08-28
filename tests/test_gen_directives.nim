@@ -93,8 +93,19 @@ suite "parsing an LLM reply":
     let (plan, ok) = parsePlan(text, defaultPlanValue(), false, repaired)
     ## The read is truncated first, so what survives is at most the cap.
     check extractJsonObject(text).len <= MaxReplyBytes
-    check (ok or not ok)
-    discard plan
+    ## The cut lands inside the note, so the object never closes: this is a
+    ## parse FAILURE that keeps the seat's previous plan, not a crash and not
+    ## a half-applied plan. (The caller retries once, then falls back.)
+    check not ok
+    check plan == defaultPlanValue()
+    ## And the cap does not stop a reply whose object fits: 9 KB of prose
+    ## AFTER a small object still parses.
+    let tail = "{\"intent\":\"scout\",\"scouts\":3} " & padding
+    let (tailPlan, tailOk) = parsePlan(tail, defaultPlanValue(), false,
+      repaired)
+    check tailOk
+    check tailPlan.intent == inScout
+    check tailPlan.scouts == 3
 
   test "the 4096 reply cap is BYTES, cut on a rune boundary":
     ## The note states this one cap in BYTES. Under a rune cap a reply of
