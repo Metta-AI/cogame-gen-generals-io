@@ -3,10 +3,15 @@
 import std/[unittest, sets]
 import generals/sim as gensim
 
+const BoardSeeds = 10_000
+  ## The note's SS Tests 1 sweep: ten thousand seeds, both board sizes. The
+  ## generator is pure integer work on 160 cells, so the whole file still
+  ## runs in seconds.
+
 suite "the board generator":
   test "the board is four-fold symmetric in kind, for both sizes":
     for size in [(16, 10), (12, 8)]:
-      for seed in 0 ..< 2000:
+      for seed in 0 ..< BoardSeeds:
         var config = defaultGameConfig()
         config.seed = seed
         config.boardW = size[0]
@@ -20,7 +25,7 @@ suite "the board generator":
         check board.mountainSymmetric()
 
   test "the mountain and city counts match the formulas":
-    for seed in 0 ..< 400:
+    for seed in 0 ..< BoardSeeds:
       var config = defaultGameConfig()
       config.seed = seed
       let board = generateBoard(config)
@@ -34,7 +39,7 @@ suite "the board generator":
       check board.countKind(ckCity) == config.cityCount
 
   test "every general is off the edge, holds 1 army, and mirrors the others":
-    for seed in 0 ..< 500:
+    for seed in 0 ..< BoardSeeds:
       var config = defaultGameConfig()
       config.seed = seed
       let board = generateBoard(config)
@@ -56,7 +61,7 @@ suite "the board generator":
         check orbit[seat] == board.generalCell[seat]
 
   test "the connectivity repair leaves every non-mountain cell reachable":
-    for seed in 0 ..< 2000:
+    for seed in 0 ..< BoardSeeds:
       var config = defaultGameConfig()
       config.seed = seed
       let board = generateBoard(config)
