@@ -1,10 +1,12 @@
 ## gen-generals-io entrypoint: reads the Coworld runtime contract and starts
 ## either a live episode server or a replay viewer server.
 ##
-## Forked from coworld-ctf's `src/ctf.nim`, INCLUDING the rule that seed
-## randomisation happens HERE, before `config.update`'s pinned seed is
-## honoured, so every seed-derived draw — which in this game is the whole
-## board — follows the FINAL seed.
+## Forked from coworld-ctf's `src/ctf.nim`, INCLUDING the rule that the seed
+## is settled HERE, in the entrypoint, before anything derives from it: the
+## injected `game_config` is applied first, and only a config that does NOT
+## pin a seed is randomised — reading the pin is what the order is for. The
+## board, this game's only seed-derived draw, is generated later, inside
+## `runGameServer` -> `initSim`, so every draw follows the FINAL seed.
 
 import std/[json, strutils, sysrand]
 import bitworld/runtime
