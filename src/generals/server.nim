@@ -37,7 +37,6 @@ type
     policies: seq[string]
     registered: seq[bool]
     everRegistered: seq[bool]
-    heldRegistrations: Table[int, string]
     playerSockets: Table[int, WebSocket]
     socketSlots: Table[WebSocket, int]
     globalSockets: HashSet[WebSocket]
@@ -596,7 +595,6 @@ proc runGameServer*(config: GameConfig, runtimeConfig: RuntimeConfig) =
   shared.policies = newSeq[string](shared.seats)
   shared.registered = newSeq[bool](shared.seats)
   shared.everRegistered = newSeq[bool](shared.seats)
-  shared.heldRegistrations = initTable[int, string]()
   let chrome = buildStateJson(gameSim, frameContext(gameSim), previousCells,
     true)
   shared.snapshot = buildViewerPacket(gameSim, boardArt, viewerState, chrome)
