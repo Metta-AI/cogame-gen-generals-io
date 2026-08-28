@@ -21,6 +21,25 @@ proc runScripted(sim: var Sim, kinds: array[Seats, ScriptKind]) =
           psScripted, 0)
     sim.stepTurn()
 
+proc streamOf(seed: int, kinds: array[Seats, ScriptKind]):
+    (seq[uint32], seq[string], string) =
+  ## The per-turn hash stream, the per-turn board bytes and the results
+  ## document of one episode.
+  var sim = freshSim(seed)
+  var hashes = @[sim.gameHash()]
+  var states = @[$sim.board.army & "|" & $sim.board.owner & "|" &
+    $sim.board.kind]
+  while not sim.done:
+    if sim.isDirectiveTurn():
+      for seat in sim.aliveSeats():
+        sim.installPlan(seat, scriptedPlan(sim.viewOf(seat), kinds[seat]),
+          psScripted, 0)
+    sim.stepTurn()
+    hashes.add(sim.gameHash())
+    states.add($sim.board.army & "|" & $sim.board.owner & "|" &
+      $sim.board.kind)
+  (hashes, states, $generalsResultsJson(sim))
+
 suite "determinism":
   test "no floating point in the sim path":
     const files = ["sim", "board", "vision", "resolve", "scoring", "captain",
@@ -38,22 +57,22 @@ suite "determinism":
             check false
 
   test "the same seed and the same plans give byte-identical streams":
-    var first = freshSim()
-    var second = freshSim()
+    ## The STREAM, turn by turn -- not just the final state. A divergence
+    ## that cancels out before the last turn is still a divergence, and the
+    ## end-state comparison this test used to make could not see it.
     let kinds = [skSprawl, skCrown, skSprawl, skCrown]
-    var hashesA: seq[uint32]
-    var hashesB: seq[uint32]
-    runScripted(first, kinds)
-    for turn in 0 ..< 1:
-      discard
-    runScripted(second, kinds)
-    check first.turn == second.turn
-    check first.gameHash() == second.gameHash()
-    check first.board.army == second.board.army
-    check generalsResultsJson(first) == generalsResultsJson(second)
-    hashesA.add(first.gameHash())
-    hashesB.add(second.gameHash())
+    let (hashesA, statesA, endA) = streamOf(1734029581, kinds)
+    let (hashesB, statesB, endB) = streamOf(1734029581, kinds)
+    check hashesA.len > 100
+    check hashesA.len == statesA.len
     check hashesA == hashesB
+    check statesA == statesB
+    for turn in 0 ..< hashesA.len:
+      if hashesA[turn] != hashesB[turn]:
+        checkpoint("first divergence at turn " & $turn)
+        check false
+        break
+    check endA == endB
 
   test "two different seeds do NOT give the same stream":
     var a = freshSim(1)
