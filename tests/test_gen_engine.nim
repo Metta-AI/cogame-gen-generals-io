@@ -235,6 +235,22 @@ suite "the directive loop":
     decisions = engine.decideTurn(sim, sim.aliveSeats(), 0)
     check decisions[1].source == psLlm
 
+  test "a mid-episode drop is applied by setSeatConnected alone":
+    ## What the game loop calls every directive turn: the seat's prompt and
+    ## baseline are not re-read, only the socket's presence.
+    var sim = freshSim()
+    let engine = engineWith(goodRunner(0))
+    var decisions = engine.decideTurn(sim, sim.aliveSeats(), 0)
+    check decisions[2].source == psLlm
+    engine.setSeatConnected(2, false)
+    decisions = engine.decideTurn(sim, sim.aliveSeats(), 0)
+    check decisions[2].source == psFallback
+    check decisions[2].cause == fcDisconnected
+    check decisions[2].plan == sprawlPlan(sim.viewOf(2))
+    engine.setSeatConnected(2, true)
+    decisions = engine.decideTurn(sim, sim.aliveSeats(), 0)
+    check decisions[2].source == psLlm
+
   test "a scripted seat consumes no request at all":
     var sim = freshSim()
     let engine = engineWith(goodRunner(0))

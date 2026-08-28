@@ -288,6 +288,14 @@ proc runGame() {.gcsafe.} =
         gameSim.applyWallClockStop(gameSim.turn)
         break
       if gameSim.isDirectiveTurn():
+        ## Re-read the sockets: a seat that dropped since the last directive
+        ## turn falls back to sprawl this turn, and one that reconnected
+        ## revives (design note SS End conditions). `connected` computed once
+        ## before the loop could only ever describe the lobby.
+        withLock stateLock:
+          for slot in 0 ..< shared.seats:
+            if gameSim.policyKinds[slot] == "llm":
+              engine.setSeatConnected(slot, shared.playerSockets.hasKey(slot))
         discard engine.considerBudgetGuard(gameSim, elapsed)
         if engine.budgetGuardTurn == gameSim.turn:
           replayWriter.writeChat("budget_guard", %*{

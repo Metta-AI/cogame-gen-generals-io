@@ -87,6 +87,13 @@ proc setSeatPolicy*(engine: DecideEngine, seat: int, isLlm: bool,
   engine.seats[seat] = SeatPolicy(isLlm: isLlm, prompt: prompt,
     baseline: baseline, connected: connected)
 
+proc setSeatConnected*(engine: DecideEngine, seat: int, connected: bool) =
+  ## A seat that drops mid-episode plays sprawl and revives on reconnect, so
+  ## the socket table is re-read before every directive turn rather than once
+  ## before the loop.
+  if seat >= 0 and seat < Seats:
+    engine.seats[seat].connected = connected
+
 proc causeOf(error: string): FallbackCause =
   let lower = error.toLowerAscii()
   if "timeout" in lower or "timed out" in lower: fcTimeout
