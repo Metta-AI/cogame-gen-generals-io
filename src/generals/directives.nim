@@ -173,13 +173,16 @@ proc buildObservation*(view: SeatView, config: GameConfig,
     if view.seenTurn[cell] >= 0 and view.knownKind(cell) == ckCity:
       cityCells.add(cell)
   let home = view.generalCell
+  ## Nearest first by BFS DISTANCE, not by Manhattan distance: with mountains
+  ## on the board the two orders differ, and the walk is what the captain will
+  ## actually have to make. Same breadth-first proc the captain uses, so the
+  ## list a commander reads is ordered the way its orders will be executed.
+  let cityPaths = view.shortestPaths(home, false, 0)
   cityCells.sort(proc (a, b: int): int =
     if home < 0:
       return a - b
-    let da = abs(view.viewX(a) - view.viewX(home)) +
-      abs(view.viewY(a) - view.viewY(home))
-    let db = abs(view.viewX(b) - view.viewX(home)) +
-      abs(view.viewY(b) - view.viewY(home))
+    let da = cityPaths.dist[a]
+    let db = cityPaths.dist[b]
     if da != db: da - db else: a - b)
   var cityShown = 0
   for cell in cityCells:
@@ -227,13 +230,13 @@ proc buildObservation*(view: SeatView, config: GameConfig,
         frontierCells.add(cell)
         break
   let stack = view.largestOwned()
+  ## Nearest first, by the same BFS distance as the cities above.
+  let frontierPaths = view.shortestPaths(stack, false, 0)
   frontierCells.sort(proc (a, b: int): int =
     if stack < 0:
       return a - b
-    let da = abs(view.viewX(a) - view.viewX(stack)) +
-      abs(view.viewY(a) - view.viewY(stack))
-    let db = abs(view.viewX(b) - view.viewX(stack)) +
-      abs(view.viewY(b) - view.viewY(stack))
+    let da = frontierPaths.dist[a]
+    let db = frontierPaths.dist[b]
     if da != db: da - db else: a - b)
   for i in 0 ..< min(MaxFrontier, frontierCells.len):
     frontier.add(cellPair(view, frontierCells[i]))

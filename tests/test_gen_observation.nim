@@ -121,6 +121,33 @@ suite "the observation contract":
       check observation["armies_omitted"].getInt() >= 0
       check observation["how_it_went"].getStr().len <= MaxHowItWentRunes * 4
 
+  test "known_cities and the frontier are ordered by BFS distance":
+    ## Not Manhattan distance: with mountains on the board the two orders
+    ## differ, and the note asks for the walk the captain would actually make.
+    let sim = playedSim()
+    for seat in 0 ..< Seats:
+      let view = sim.viewOf(seat)
+      let observation = observationFor(sim, seat)
+      let home = view.generalCell
+      if home < 0:
+        continue
+      let paths = view.shortestPaths(home, false, 0)
+      var last = -1
+      for entry in observation["known_cities"]:
+        let cell = entry["cell"][1].getInt() * sim.board.w +
+          entry["cell"][0].getInt()
+        check paths.dist[cell] >= last
+        last = paths.dist[cell]
+      let stack = view.largestOwned()
+      if stack < 0:
+        continue
+      let fogPaths = view.shortestPaths(stack, false, 0)
+      last = -1
+      for pair in observation["fog"]["frontier"]:
+        let cell = pair[1].getInt() * sim.board.w + pair[0].getInt()
+        check fogPaths.dist[cell] >= last
+        last = fogPaths.dist[cell]
+
   test "the seed, another seat's plan and another seat's note never appear":
     var sim = playedSim()
     for seat in 0 ..< Seats:
