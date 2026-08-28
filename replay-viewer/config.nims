@@ -39,6 +39,11 @@ switch("threads", "off")
 # own globals, which is how oversized replays died with an EMPTY
 # gen_error_len(). Aborting keeps linear memory intact, and the page reads
 # gen_stage_ptr/len afterwards to report what the runtime was doing.
+# The ONE line this file adds to the starter's (everything else in the diff
+# against coworld-ctf's config.nims is an identifier rename): the wall
+# textures the board's rig art blits -- client/art/walls/wall_{h,v}.jpg,
+# loaded by src/generals/rig_art.nim -- live outside data/, and under
+# emscripten a file that is not preloaded into MEMFS cannot be opened at all.
 switch(
   "passL",
   (&"""
