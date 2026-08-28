@@ -1116,24 +1116,7 @@ body[data-embed] #board { top: 0; height: 100%; }
   var renderMomentum = C.renderMomentum;
   var getSpoilers = C.getSpoilers, setSpoilers = C.setSpoilers;
 
-  // ---- eye-level cog art for the EYES PiP billboards ----
-  // The PiP is an eye-level raycaster, so its billboards need art drawn from a
-  // HORIZONTAL camera: soldier_{red,blue}_front.png is the real cog standing on
-  // its wheels, square to the viewer, with the cyan smile visor tilted up toward
-  // the camera (built by scripts/art/build_cvc_front.py, served as a static PNG).
-  //
-  // The plain soldier_{red,blue}.png masters are the TOP-DOWN BOARD sprites (the
-  // cog as seen from ABOVE). Blitting those here is what made a near cog read as
-  // a flat team-coloured plate with the smile squashed onto its bottom edge —
-  // "a head on the ground". No trim or pose math fixes that; it is the wrong
-  // camera. They stay only as the pre-load fallback, ranked behind the front art.
-  //
-  // Loaded once; drawFpvEntity blits the matching team image scaled to the
-  // projected figure so distant cogs shrink like everything else.
-  // Two poses per team: _gun (the cog holding its paintball marker forward at the
-  // camera) is what a LIVE cog shows, since every live cog carries its gun; the
-  // empty-handed master rides as the fallback until that one loads.
-  //
+  // ---- where this page's static art lives ----
   // COG_BASE, not a root-absolute "/client/…": this page is served from THREE
   // places and a leading slash is only correct at one of them.
   //  - native server, bare:      /client/replay        → "" + /client/…
@@ -1151,32 +1134,6 @@ body[data-embed] #board { top: 0; height: 100%; }
   var COG_BASE = window.GenStaticReplay
     ? '.'
     : location.pathname.replace(/\/clients?\/[^/]*$/, '') + '/client';
-  var COG_ART = {}, COG_ART_GUN = {};
-  ['red', 'blue', 'green', 'yellow'].forEach(function (team) {
-    COG_ART[team] = new Image();
-    COG_ART[team].src = COG_BASE + '/soldier_' + team + '_front.png';
-    COG_ART_GUN[team] = new Image();
-    COG_ART_GUN[team].src = COG_BASE + '/soldier_' + team + '_front_gun.png';
-  });
-  function cogArtReady(img) { return img && img.complete && img.naturalWidth > 0; }
-  // Pick the armed pose when it's ready, else the plain one, else null (the
-  // caller falls back to the procedural chassis).
-  function cogArtFor(team, armed) {
-    var gun = COG_ART_GUN[team], plain = COG_ART[team];
-    if (armed && cogArtReady(gun)) return gun;
-    if (cogArtReady(plain)) return plain;
-    return cogArtReady(gun) ? gun : null;
-  }
-  // The front masters are trimmed to their opaque box at build time and carry NO
-  // baked drop shadow (the billboard draws its own contact shadow), so the whole
-  // image IS the cog — a full-frame trim, unlike the top-down master which bakes
-  // a soft shadow into its right third and needs the box cut out.
-  var COG_TRIM = { x: 0, y: 0, w: 1, h: 1 };
-  var COG_ASPECT = 180 / 192;   // 0.9375 — w/h of the front master (build script prints it)
-  // Offscreen scratch for depth-dimming the cog sprite: draw the art in, then
-  // darken with a source-atop ink wash so ONLY the sprite pixels dim (never the
-  // floor/walls already painted behind it). Reused across draws.
-  var cogScratch = document.createElement('canvas'), cogScratchCtx = null;
   // Engine-authoritative wire constants (read via the shared chrome; the
   // fallback literals for raw file:// opens live in chrome_common.js).
   var WIRE = C.WIRE, SPEEDS = C.SPEEDS, FPS = C.FPS;

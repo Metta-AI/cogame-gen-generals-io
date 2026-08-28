@@ -133,6 +133,19 @@ cut("  function seatLivesLeft(p) {",
 
 """)
 
+# The eye-level cog art. It exists ONLY for the removed first-person PiP's
+# billboards (drawFpvEntity); nothing else in the page reads COG_ART,
+# cogArtFor, COG_TRIM or cogScratch, and four of the eight images it
+# requested -- soldier_*_front_gun.png, the paintball marker pose -- are not
+# in this repo's data/ at all, so every viewer load fetched four 404s that
+# cogArtReady quietly swallowed. COG_BASE and its comment stay: the
+# locker-room curtain resolves its art through it.
+cut("  // ---- eye-level cog art for the EYES PiP billboards ----",
+    "  // COG_BASE, not a root-absolute",
+    "  // ---- where this page's static art lives ----\n")
+cut("  var COG_ART = {}, COG_ART_GUN = {};",
+    "  // Engine-authoritative wire constants")
+
 # The flag icon builder.
 cut("  // ---- flag icon svg",
     "  // (speed chips are built + rendered by the shared chrome via ctx.send)")
