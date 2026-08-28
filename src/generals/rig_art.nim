@@ -33,18 +33,41 @@ type
     typeface*: Typeface
     ok*: bool
 
+proc appDirOrEmpty(): string =
+  ## `getAppDir` reads /proc/self/exe. Under emscripten that readlink fails
+  ## and Nim raises a DEFECT out of `getApplAux` -- not a CatchableError, so
+  ## no try/except in the caller can hold it, and the whole replay load dies
+  ## with "value out of range: -1". The bundle never needs an app dir: its
+  ## assets are preloaded at a relative path. So do not ask for one there.
+  when defined(emscripten):
+    ""
+  else:
+    try:
+      getAppDir()
+    except CatchableError:
+      ""
+
 proc dataDir*(): string =
   ## The wasm bundle preloads `data@data`, so the relative path wins there;
   ## the native container copies `data/` next to the binary.
-  for candidate in ["data", getAppDir() / "data",
-      getAppDir() / ".." / "data"]:
+  let appDir = appDirOrEmpty()
+  var candidates = @["data"]
+  if appDir.len > 0:
+    candidates.add(appDir / "data")
+    candidates.add(appDir / ".." / "data")
+  for candidate in candidates:
     if dirExists(candidate):
       return candidate
   "data"
 
 proc clientArtDir*(): string =
-  for candidate in ["client/art", getAppDir() / "client" / "art",
-      "art"]:
+  ## `Dockerfile.replay-viewer` preloads `client/art@art`, so the bundle sees
+  ## it as "art"; the native image keeps the repo layout.
+  let appDir = appDirOrEmpty()
+  var candidates = @["client/art", "art"]
+  if appDir.len > 0:
+    candidates.add(appDir / "client" / "art")
+  for candidate in candidates:
     if dirExists(candidate):
       return candidate
   "art"
