@@ -182,6 +182,18 @@ suite "chrome provenance":
     check "data-replay-error" in shell
     check "'loaded'" in shell
 
+  test "the page and the shell agree on the adapter's name":
+    ## The page decides it is running inside the static bundle by looking
+    ## for the shell's global. A rename applied to one file and not the
+    ## other leaves the page opening a websocket that is not there: every
+    ## asset 200s, nothing throws, and the viewer never draws a frame.
+    let shell = repo("replay-viewer/static_replay.js")
+    check "window.GenStaticReplay = {" in shell
+    check "window.GenStaticReplay" in page
+    check "CtfStaticReplay" notin shell
+    check "CtfStaticReplay" notin page
+    check "CtfStaticReplay" notin repo("client/league_replayer.html")
+
 suite "the wasm harness":
   test "the EXACT emitted module loads the replay and never diverges":
     ## The `test` job has no bundle, so this returns early there; the

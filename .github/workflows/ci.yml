@@ -310,6 +310,22 @@ jobs:
           name: smoke-replay
           path: dist/smoke
 
+      # tools/wasm_replay_smoke.cjs runs the EXACT emitted module headlessly:
+      # wasm32-only failures (integer traps, address-space exhaustion, a stale
+      # export list) are invisible to the native 64-bit shards. It fails if
+      # gen_mismatch_tick() is ever anything but -1, which is the native<->wasm
+      # determinism gate.
+      - name: Native <-> wasm hash gate
+        run: |
+          set -euo pipefail
+          replay=""
+          for candidate in dist/smoke/*.replay dist/smoke/replay.json; do
+            if [ -f "${candidate}" ]; then replay="${candidate}"; break; fi
+          done
+          test -n "${replay}"
+          node tools/wasm_replay_smoke.cjs dist/static-replay-viewer "${replay}" 300
+
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -395,24 +411,12 @@ jobs:
           retention-days: 14
 
       - name: Upload the bundle
+        # Always: a bundle that does not load is exactly the one worth
+        # downloading and running by hand.
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: static-replay-viewer
           path: dist/static-replay-viewer
           if-no-files-found: error
           retention-days: 14
-
-      # tools/wasm_replay_smoke.cjs runs the EXACT emitted module headlessly:
-      # wasm32-only failures (integer traps, address-space exhaustion, a stale
-      # export list) are invisible to the native 64-bit shards. It fails if
-      # gen_mismatch_tick() is ever anything but -1, which is the native<->wasm
-      # determinism gate.
-      - name: Native <-> wasm hash gate
-        run: |
-          set -euo pipefail
-          replay=""
-          for candidate in dist/smoke/*.replay dist/smoke/replay.json; do
-            if [ -f "${candidate}" ]; then replay="${candidate}"; break; fi
-          done
-          test -n "${replay}"
-          node tools/wasm_replay_smoke.cjs dist/static-replay-viewer "${replay}" 300

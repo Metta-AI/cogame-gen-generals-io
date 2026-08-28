@@ -281,7 +281,7 @@
     };
   }
 
-  window.CtfStaticReplay = {
+  window.GenStaticReplay = {
     createCore: createCore
   };
 })();
