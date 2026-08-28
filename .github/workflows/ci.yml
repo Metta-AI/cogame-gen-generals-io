@@ -158,22 +158,42 @@ jobs:
 
       # The repo's own manifest test cannot see the platform's validator, and
       # the validator is what actually refuses an upload (collab-cooking,
-      # 2026-08-25). Run the installed CLI's own loader here.
+      # 2026-08-25). Run the installed CLI's own loader here, through uv --
+      # the way coworld-release.yml installs it. A `pip install` inside a
+      # running python3 heredoc did NOT work: the interpreter had already
+      # resolved its search path, the import raised ModuleNotFoundError, and
+      # `continue-on-error` kept the job green over a validator that had never
+      # run. No continue-on-error here: this step is load-bearing.
+      - uses: astral-sh/setup-uv@v6
+
       - name: The manifest loads under the installed coworld CLI
+        env:
+          # Keep in step with coworld-release.yml's COWORLD_PKG.
+          COWORLD_PKG: "coworld[auth]==0.1.43"
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json, subprocess, sys, tempfile, pathlib
-          subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
-                                 "coworld==0.1.42"])
-          from coworld.manifest import validate_upload_manifest  # type: ignore
-          template = json.loads(pathlib.Path("coworld_manifest_template.json").read_text())
-          rendered = json.loads(json.dumps(template).replace(
-              "{{GEN_GENERALS_IO_IMAGE}}", "coworld-gen-generals-io:latest"))
-          validate_upload_manifest(rendered)
-          print("manifest OK under the installed coworld CLI")
+          cat > "${RUNNER_TEMP}/check_manifest.py" <<'PY'
+          import json
+          import pathlib
+          # The exact pair coworld build uses: _load_template_manifest injects
+          # game.version and the compose image, then calls the upload
+          # validator. Validating the raw template instead reports a missing
+          # game.version that `coworld build` supplies.
+          from coworld.bundle import _load_template_manifest
+
+          template = json.loads(
+              pathlib.Path("coworld_manifest_template.json").read_text())
+          if "version" in template["game"]:
+              raise SystemExit(
+                  "coworld build refuses a template that sets game.version")
+          manifest = _load_template_manifest(
+              template, "0.0.0",
+              {"{{GEN_GENERALS_IO_IMAGE}}": "coworld-gen-generals-io:latest"})
+          print("manifest OK under the installed coworld CLI:",
+                manifest.game.name)
           PY
-        continue-on-error: true
+          uv run --no-project --python 3.12 --with "$COWORLD_PKG" \
+            python "${RUNNER_TEMP}/check_manifest.py"
 
   # ---------------------------------------------------------------------
   # Packaging smoke: the production image builds, and one real episode runs
