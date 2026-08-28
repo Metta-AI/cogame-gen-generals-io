@@ -161,7 +161,32 @@ suite "resolution: arithmetic":
     check sim.board.armyOf(sim.board.cellIndex(6, 5)) == 6
 
 suite "resolution: rotated priority":
-  test "the winner of a contested cell on turn t is seat t mod 4":
+  test "the seat that moves FIRST on turn t is seat t mod 4":
+    ## The note's claim, asserted directly: two seats push the same empty
+    ## cell with the same force, so the first mover takes it and the second
+    ## only strips it back to zero without flipping it. The survivor names
+    ## who had priority.
+    for turn in 0 ..< 8:
+      var sim = blankSim()
+      sim.clearBoard()
+      sim.turn = turn
+      let target = sim.board.cellIndex(8, 5)
+      let sources = [(7, 5, dirE), (9, 5, dirW), (8, 4, dirS), (8, 6, dirN)]
+      var moves: array[Seats, Move]
+      var hasMove: array[Seats, bool]
+      let first = turn mod Seats
+      let second = (turn + 1) mod Seats
+      for seat in [first, second]:
+        sim.own(sources[seat][0], sources[seat][1], seat, 6)
+        moves[seat] = Move(
+          fromCell: sim.board.cellIndex(sources[seat][0], sources[seat][1]),
+          dir: sources[seat][2], amount: 5)
+        hasMove[seat] = true
+      sim.resolveMoves(moves, hasMove)
+      check sim.board.ownerOf(target) == first
+      check sim.board.armyOf(target) == 0
+
+  test "with all four contesting, the survivor is the THIRD mover, (t + 2) mod 4":
     for turn in 0 ..< 8:
       var sim = blankSim()
       sim.clearBoard()
