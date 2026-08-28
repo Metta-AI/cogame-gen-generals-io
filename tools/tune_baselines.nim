@@ -86,12 +86,31 @@ when isMainModule:
             &"-> margin {value:.4f}"
 
   if write:
+    ## The sweep's own maxima, recorded next to the pick so nobody has to
+    ## read "picked" as "argmax": the shipped values are the ones the RULES
+    ## document (reserve 20, scouts 2, expand under a quarter of the board),
+    ## kept because they satisfy the objective, not because they maximise it.
+    var bestOverall = newJNull()
+    var bestShaped = newJNull()
+    for row in rows:
+      let value = row["margin"].getFloat()
+      if bestOverall.kind == JNull or value > bestOverall["margin"].getFloat():
+        bestOverall = row
+      if row["crownReserve"].getInt() > 0 and row["crownScouts"].getInt() > 1:
+        if bestShaped.kind == JNull or value > bestShaped["margin"].getFloat():
+          bestShaped = row
     let document = %*{
       "picked": {
         "sprawlLandDivisor": DefaultTuning.sprawlLandDivisor,
         "crownReserve": DefaultTuning.crownReserve,
         "crownScouts": DefaultTuning.crownScouts},
       "margin": shippedMargin,
+      "picked_is": "the values docs/RULES.md and the manifest state to a " &
+        "reader (crown reserves 20 with 2 scouts; sprawl expands under a " &
+        "quarter of the board), SWEPT and kept because they satisfy the " &
+        "objective below -- not the row with the largest margin",
+      "best_overall": bestOverall,
+      "best_with_documented_shape": bestShaped,
       "seeds": %Seeds,
       "rotations": Seats,
       "objective": "sprawl ahead of crown (margin > 0) with crown keeping " &

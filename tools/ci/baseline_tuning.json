@@ -5,6 +5,19 @@
     "crownScouts": 2
   },
   "margin": 0.020833333333333315,
+  "picked_is": "the values docs/RULES.md and the manifest state to a reader (crown reserves 20 with 2 scouts; sprawl expands under a quarter of the board), SWEPT and kept because they satisfy the objective below -- not the row with the largest margin",
+  "best_overall": {
+    "sprawlLandDivisor": 5,
+    "crownReserve": 10,
+    "crownScouts": 2,
+    "margin": 0.10416666666666674
+  },
+  "best_with_documented_shape": {
+    "sprawlLandDivisor": 5,
+    "crownReserve": 10,
+    "crownScouts": 2,
+    "margin": 0.10416666666666674
+  },
   "seeds": [
     1734029581,
     42,
