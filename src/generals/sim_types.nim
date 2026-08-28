@@ -170,6 +170,21 @@ proc truncateRunes*(text: string, cap: int): string =
 proc runeCap*(text: string, cap: int): string {.inline.} =
   truncateRunes(text, cap)
 
+proc truncateBytes*(text: string, cap: int): string =
+  ## Truncate to at most `cap` BYTES, never inside a rune. The reply cap is
+  ## the one cap the note states in bytes ("whole reply | bytes | <= 4096 read
+  ## from the provider before parsing"): a rune cap would let a multi-byte
+  ## reply through at up to four times the stated size. The cut walks back
+  ## over UTF-8 continuation bytes, so the result is still strict UTF-8.
+  if cap <= 0:
+    return ""
+  if text.len <= cap:
+    return text
+  var cut = cap
+  while cut > 0 and (uint8(text[cut]) and 0xC0'u8) == 0x80'u8:
+    cut.dec
+  text[0 ..< cut]
+
 proc sanitizeNote*(text: string, cap = MaxNoteRunes): string =
   ## Collapse newlines and control characters to spaces, squeeze runs, then
   ## truncate on a rune boundary.

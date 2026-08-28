@@ -96,6 +96,19 @@ suite "parsing an LLM reply":
     check (ok or not ok)
     discard plan
 
+  test "the 4096 reply cap is BYTES, cut on a rune boundary":
+    ## The note states this one cap in BYTES. Under a rune cap a reply of
+    ## four-byte runes survived at up to 16 KB.
+    var wide = ""
+    while wide.len < 12000:
+      wide.add(Emoji)
+    let cut = truncateBytes(wide, MaxReplyBytes)
+    check cut.len <= MaxReplyBytes
+    check cut.len > MaxReplyBytes - 4
+    check cut.validateUtf8() == -1
+    check truncateBytes("abc", 10) == "abc"
+    check extractJsonObject("{\"note\":\"" & wide & "\"}").len <= MaxReplyBytes
+
   test "a 300-character note truncates to 160 RUNES":
     var repaired = 0
     var long = ""

@@ -297,8 +297,9 @@ proc extractJsonObject*(text: string): string =
   ## first-brace..last-brace rescue. Empty when nothing can be recovered.
   var body = text
   if body.len > MaxReplyBytes:
-    ## Truncate the READ, on a rune boundary, before parsing.
-    body = truncateRunes(body, MaxReplyBytes)
+    ## Truncate the READ before parsing: `MaxReplyBytes` is a BYTE cap (the
+    ## note's reply schema states it in bytes), cut on a rune boundary.
+    body = truncateBytes(body, MaxReplyBytes)
   body = body.replace("```json", " ").replace("```", " ")
   var depth = 0
   var start = -1
