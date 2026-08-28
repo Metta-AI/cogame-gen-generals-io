@@ -37,12 +37,22 @@ proc sprawlPlan*(view: SeatView, tuning = DefaultTuning): Plan =
   result.intent = inAttack
   let stack = view.ownedCells()
   if stack.len > 0:
+    ## The NEAREST visible enemy cell, measured from this seat's crown, not
+    ## the lowest-index one. Ties break by cell index, so the choice is still
+    ## a pure function of the view.
     var best = -1
+    var bestDist = high(int)
+    let home = view.generalCell
     for cell in 0 ..< view.viewCells():
       if view.isVisible(cell) and int(view.ownerNow[cell]) >= 0 and
           int(view.ownerNow[cell]) != view.seat:
-        if best < 0:
+        let dist =
+          if home < 0: cell
+          else: abs(view.viewX(cell) - view.viewX(home)) +
+            abs(view.viewY(cell) - view.viewY(home))
+        if best < 0 or dist < bestDist:
           best = cell
+          bestDist = dist
     if best >= 0:
       result.hasTarget = true
       result.targetX = view.viewX(best)
