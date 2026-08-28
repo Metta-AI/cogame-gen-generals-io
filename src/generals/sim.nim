@@ -112,6 +112,19 @@ proc stepTurn*(sim: var Sim) =
   if sim.done:
     return
   sim.frameEvents = newJArray()
+  ## The plans installed FOR THIS TURN ride the turn's own frame. Emitting
+  ## them here rather than at the call site is what puts a commander's line
+  ## in the feed on playback as well as live: `stepTurn` clears `frameEvents`,
+  ## so an event recorded before it was thrown away, and the replay's plans
+  ## are installed by `applyRecordedPlans`, which has no call site to record
+  ## from.
+  for seat in 0 ..< Seats:
+    if sim.stats[seat].alive and sim.havePlan[seat] and
+        sim.planTurn[seat] == sim.turn:
+      sim.record(sePlan, %*{
+        "seat": seat,
+        "intent": $sim.plan[seat].intent,
+        "note": sim.plan[seat].note})
   let (moves, hasMove) = sim.compileMoves()
   sim.resolveMoves(moves, hasMove)
   sim.growPerTurn()

@@ -26,7 +26,6 @@ type
     leadSeries*: seq[seq[int]]
     names*: array[Seats, string]
     policyKinds*: array[Seats, string]
-    planFeed*: seq[JsonNode]
     endTurn*: int
 
 proc buildPlanTable(replay: ReplayData): Table[int, seq[JsonNode]] =
@@ -79,8 +78,6 @@ proc initReplayPlayer*(replay: ReplayData): ReplayPlayer =
       result.maxTick = max(result.maxTick, record.tick)
   for node in replay.chatRecords("stop"):
     result.stopTurn = node{"turn"}.getInt(-1)
-  for node in replay.chatRecords("plan"):
-    result.planFeed.add(node)
 
 proc prescan*(player: var ReplayPlayer) =
   ## The load-time pre-scan: re-simulate the whole episode once, headlessly,

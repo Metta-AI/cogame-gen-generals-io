@@ -183,6 +183,40 @@ suite "the replay round trip":
     check seen.getOrDefault("citytaken") >= 1
     check seen.getOrDefault("generalspotted") >= 1
 
+suite "the commander's line survives into playback":
+  ## The plan `note` is the only place a spectator sees the LLM playing
+  ## (design note SS Viewer Readouts 6). It has to ride the LOAD-BEARING plan
+  ## input record, because the chat records are presentation and the browser
+  ## re-derives its frames from the inputs alone.
+  test "a full-cap note reaches the replay's plan frame event unshortened":
+    let (bytes, _) = recordEpisode(42, [skSprawl, skCrown, skSprawl, skCrown],
+      notes = true)
+    let data = parseReplayBytes(bytes)
+    var carried = 0
+    for record in data.planRecords():
+      let note = record.payload{"note"}.getStr()
+      check note.runeLen <= MaxNoteRunes
+      if note.len > 0:
+        carried.inc
+    check carried > 0
+
+    var session = initReplaySession(data)
+    var noteEvents = 0
+    var longest = 0
+    while session.cursor < session.endTick and noteEvents < Seats:
+      session.seekTo(session.cursor + 1)
+      for event in session.sim.frameEvents:
+        if event{"k"}.getStr() == "plan":
+          let note = event{"note"}.getStr()
+          if note.len > 0:
+            noteEvents.inc
+            longest = max(longest, note.runeLen)
+    ## One per living seat on the same directive turn, at the full cap: a
+    ## quietly shortened remark would show up here as a smaller rune count.
+    check noteEvents == Seats
+    check longest == MaxNoteRunes
+    check session.sim.plan[0].note.runeLen == MaxNoteRunes
+
 suite "playback opens at the game start":
   ## Acceptance checklist 13, third bullet. The probe is a replay whose game
   ## start is LATE — 300 presentation ticks of lobby prefix instead of the

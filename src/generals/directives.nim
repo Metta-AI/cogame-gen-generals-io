@@ -442,13 +442,18 @@ proc clampPlan*(plan: Plan, w, h: int): Plan =
     result.targetY = clamp(result.targetY, 0, h - 1)
 
 proc planJson*(plan: Plan): JsonNode =
+  ## The load-bearing plan input record. `note` rides along so the commander's
+  ## own words survive into playback (the feed's commander line is where a
+  ## spectator sees the LLM playing); it is excluded from `gameHash`, so
+  ## nothing a commander SAYS can move the hash chain.
   %*{
     "intent": $plan.intent,
     "target": (if plan.hasTarget: %*[plan.targetX, plan.targetY]
                else: newJNull()),
     "reserve": plan.reserve,
     "cities": $plan.cities,
-    "scouts": plan.scouts}
+    "scouts": plan.scouts,
+    "note": truncateRunes(plan.note, MaxNoteRunes)}
 
 proc planFromJson*(node: JsonNode): Plan =
   result = defaultPlanValue()
@@ -465,6 +470,7 @@ proc planFromJson*(node: JsonNode): Plan =
   let (cities, _) = parseCityPolicyText(node{"cities"}.getStr())
   result.cities = cities
   result.scouts = node{"scouts"}.getInt()
+  result.note = sanitizeNote(node{"note"}.getStr())
 
 proc fallbackPlan*(view: SeatView): Plan =
   ## The fallback IS the sprawl baseline proc, imported and never duplicated.

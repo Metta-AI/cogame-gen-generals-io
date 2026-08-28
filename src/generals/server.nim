@@ -203,9 +203,8 @@ proc writePlanRecords(engine: DecideEngine, seats: seq[int],
     for key, value in planJson(decision.plan):
       record[key] = value
     replayWriter.writeChat("plan", record)
-    gameSim.record(sePlan, %*{
-      "seat": seat, "intent": $decision.plan.intent,
-      "note": truncateRunes(decision.plan.note, MaxNoteRunes)})
+    ## The `plan` EVENT is emitted by `sim.stepTurn` from the installed plan,
+    ## so the live feed and a replay's feed are fed by one code path.
   for fallback in engine.fallbacks:
     replayWriter.writeChat("fallback", fallback)
     gameSim.record(seFallback, fallback)
