@@ -6,6 +6,39 @@ import generals/sim as gensim
 
 const Emoji = "\xF0\x9F\x91\x91"   ## U+1F451 CROWN, four bytes
 
+suite "the system prompt":
+  test "every clock in the prompt comes from the config, not from ffa":
+    ## `blitz` plays 160 turns with a growth beat every 15; a prompt that
+    ## still said "turn 240" and "every 25 turns" would describe a different
+    ## game from the one the observation JSON reports every turn.
+    var ffa = defaultGameConfig()
+    let ffaPrompt = systemPromptFor(ffa)
+    check "16 by 10" in ffaPrompt
+    check "turn " & $ffa.maxTurns in ffaPrompt
+    check "every " & $ffa.growthPeriod & " turns" in ffaPrompt
+    check "Every " & $ffa.directiveEvery & " turns" in ffaPrompt
+    check "city holds " & $ffa.cityArmy in ffaPrompt
+
+    var blitz = defaultGameConfig()
+    blitz.boardW = 12
+    blitz.boardH = 8
+    blitz.maxTurns = 160
+    blitz.growthPeriod = 15
+    blitz.directiveEvery = 6
+    blitz.cityArmy = 50
+    let blitzPrompt = systemPromptFor(blitz)
+    check "12 by 8" in blitzPrompt
+    check "turn 160" in blitzPrompt
+    check "every 15 turns" in blitzPrompt
+    check "Every 6 turns" in blitzPrompt
+    check "city holds 50" in blitzPrompt
+    check "turn 240" notin blitzPrompt
+    check "every 25 turns" notin blitzPrompt
+    ## and no substitution token survives into what a model reads
+    for token in ["WxH", "CITYARMY", "GROWTHEVERY", "PLANEVERY", "MAXTURNS"]:
+      check token notin ffaPrompt
+      check token notin blitzPrompt
+
 suite "parsing an LLM reply":
   test "prose-prefixed and fenced JSON are both recovered":
     var repaired = 0

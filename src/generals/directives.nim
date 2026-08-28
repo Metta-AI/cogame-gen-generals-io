@@ -39,23 +39,24 @@ THE RULES
   there, you take the tile and the difference stays on it. If you send the
   same or less, the tile keeps the difference and stays theirs.
 - Empty plains hold 0 army, so claiming land is nearly free. A neutral
-  city holds 40 and is the only real toll on the board.
+  city holds CITYARMY and is the only real toll on the board.
 - GROWTH: every city and crown you own gains +1 army EVERY TURN. Every
-  tile you own gains +1 army every 25 turns. Neutral land never grows.
-  Land is production: 40 tiles is 40 free armies every 25 turns.
+  tile you own gains +1 army every GROWTHEVERY turns. Neutral land never
+  grows.
+  Land is production: 40 tiles is 40 free armies every GROWTHEVERY turns.
 - All four commanders move in the same turn. Priority rotates every turn,
   so nobody has a standing advantage.
 
 HOW YOU PLAY
-You do NOT type moves. Every 8 turns you send ONE plan object and a
-deterministic captain executes it, one move a turn, for the next 8 turns:
-it walks your stacks along shortest paths, claims land, breaks cities,
-keeps your reserve sitting on your crown, and spends the turns you allot
-to walking into the fog.
+You do NOT type moves. Every PLANEVERY turns you send ONE plan object and a
+deterministic captain executes it, one move a turn, for the next PLANEVERY
+turns: it walks your stacks along shortest paths, claims land, breaks
+cities, keeps your reserve sitting on your crown, and spends the turns you
+allot to walking into the fog.
 
 WINNING
-Last crown standing wins outright. If the clock runs out at turn 240 with
-more than one alive, the ranking is: still alive, then who survived
+Last crown standing wins outright. If the clock runs out at turn MAXTURNS
+with more than one alive, the ranking is: still alive, then who survived
 longest, then most land, then biggest army, then most cities.
 
 REPLY FORMAT
@@ -87,7 +88,17 @@ for six turns. You do not have to ask for that.
   OperatorHeading* = "GUIDANCE FROM YOUR OPERATOR"
 
 proc systemPromptFor*(config: GameConfig): string =
-  SystemPrompt.replace("WxH", $config.boardW & " by " & $config.boardH)
+  ## Every clock in the prompt comes from the CONFIG, not from `ffa`'s
+  ## numbers: `blitz` plays 160 turns with a growth beat every 15 and
+  ## `citadels` grows every 30, and a prompt that told those commanders
+  ## "turn 240" and "every 25 turns" would be describing a different game
+  ## from the one their observation JSON reports.
+  SystemPrompt.multiReplace(
+    ("WxH", $config.boardW & " by " & $config.boardH),
+    ("CITYARMY", $config.cityArmy),
+    ("GROWTHEVERY", $config.growthPeriod),
+    ("PLANEVERY", $config.directiveEvery),
+    ("MAXTURNS", $config.maxTurns))
 
 # ---- the observation ----------------------------------------------------
 
