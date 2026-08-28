@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>gen-generals-io renderer fixture</title>
+<!--
+  The worst-case renderer fixture.
+
+  `tools/ci/docker_smoke.sh` runs with NO ANTHROPIC_API_KEY, so every seat in
+  the CI replay plays scripted and emits no `note` at all: the smoke replay
+  can never exercise the feed's commander-line path (the cogchemists
+  2026-08-24 scar). This fixture drives the SHIPPED page instead of
+  re-implementing it (the particle-worlds 2026-08-26 scar): it loads the
+  bundle's own page in an iframe and shims ONLY the wasm entry, then feeds it
+  frames with a full-cap 160-rune note on all four seats, a board where every
+  cell holds a three-digit army, a crown-capture banner, an eliminated plate
+  and the fog lens on each of the four seats in turn, at 360 / 620 / 1280 px.
+
+  It finishes by transcribing every DOM text run the page drew to a canvas at
+  its MEASURED geometry, so `viewer_smoke.mjs --strict-text-bounds` sees the
+  chrome's strings and fails on any that has nowhere to go.
+-->
+<style>
+  html, body { margin: 0; background: #12100e; color: #f2e8d8;
+    font: 12px/1.4 ui-monospace, monospace; }
+  #frame { border: 0; display: block; }
+  #probe { position: fixed; right: 0; bottom: 0; pointer-events: none; opacity: 0.01; }
+  #log { position: fixed; left: 4px; bottom: 4px; font-size: 10px; opacity: 0.7; }
+</style>
+</head>
+<body>
+<iframe id="frame" width="1280" height="720"></iframe>
+<canvas id="probe" width="1280" height="720"></canvas>
+<div id="log">renderer fixture: starting</div>
+<script>
+'use strict';
+(function () {
+  var log = document.getElementById('log');
+  function say(text) { log.textContent = 'renderer fixture: ' + text; }
+
+  var NOTE = '';
+  while (NOTE.length < 160) NOTE += 'blue crown at 12,1 and they just spent sixty on a city - going now. ';
+  NOTE = NOTE.slice(0, 160);
+
+  var W = 16, H = 10, N = W * H;
+
+  function cells(turn) {
+    var out = [];
+    for (var i = 0; i < N; i++) {
+      var owner = (i % 5 === 4) ? -1 : (i % 4);
+      var kind = (i % 23 === 0) ? 'mountain' : (i % 17 === 0) ? 'city' : 'plain';
+      if (i === 17 || i === 28 || i === 129 || i === 142) kind = 'general';
+      out.push({ i: i, k: kind, o: kind === 'mountain' ? -1 : owner,
+                 a: kind === 'mountain' ? 0 : (100 + ((i * 7 + turn) % 900)) });
+    }
+    return out;
+  }
+
+  function frame(turn, opts) {
+    opts = opts || {};
+    var roster = [], teams = {};
+    var names = ['daveey', 'daveey-1', 'gen-generals-io-sprawl', 'gen-generals-io-crown'];
+    var colors = ['red', 'blue', 'green', 'yellow'];
+    for (var s = 0; s < 4; s++) {
+      var alive = !(opts.dead && s === 2);
+      roster.push({ s: s, seat: s, team: colors[s], name: names[s], pol: names[s],
+        alias: colors[s].toUpperCase() + '-alpha', col: colors[s],
+        alive: alive, lives: alive ? 1 : 0, kind: s < 2 ? 'llm' : 'scripted' });
+      teams[colors[s]] = { land: 40 - s, army: 999 - s, cities: 2, alive: alive,
+        out: alive ? -1 : 71, fallbacks: 1, lives: alive ? 1 : 0, policies: [names[s]] };
+    }
+    var plans = [];
+    for (var p = 0; p < 4; p++) {
+      plans.push({ seat: p, turn: turn, intent: 'raid', source: 'llm', note: NOTE });
+    }
+    var state = {
+      t: 48 + turn, mt: 240, st: 48, mx: 360, ph: opts.over ? 'gameover' : 'playing',
+      lob: 0, sp: 1, pl: true, lp: false, sk: false, ff: false, en: true, mm: -1,
+      pov: -1, bs: 1, teams: teams, roster: roster,
+      events: opts.events || [],
+      turn: turn, turns: 240, growthEvery: 25, growthIn: 25 - (turn % 25),
+      w: W, h: H, cells: cells(turn),
+      gen: [17, 28, opts.dead ? -1 : 129, 142],
+      alive: [true, true, !opts.dead, true],
+      stand: { land: [44, 41, opts.dead ? 0 : 38, 37],
+               army: [999, 888, opts.dead ? 0 : 777, 666],
+               cities: [3, 2, 0, 1] },
+      out: [-1, -1, opts.dead ? 71 : -1, -1],
+      outBy: [-1, -1, opts.dead ? 1 : -1, -1],
+      plan: plans
+    };
+    if (opts.series) {
+      var pts = [];
+      for (var t = 0; t < 240; t += 4) pts.push([t, 20 + (t % 30), 18, 15, 12]);
+      state.lead = { teams: colors, pts: pts };
+      state.lulls = [[60, 100]];
+      state.beats = [
+        { t: 100, k: 'citytaken', seat: 0 },
+        { t: 140, k: 'generalspotted', seat: 1 },
+        { t: 180, k: 'generalcaptured', seat: 1 },
+        { t: 288, k: 'end' },
+        { t: 288, k: 'gameover', winner: 'red', draw: false }
+      ];
+    }
+    if (opts.over) {
+      state.over = { winner: 'red', draw: false, t: 48 + turn, reason: 'complete',
+        endRule: 'conquest', rank: [0, 1, 3, 2], land: [44, 41, 0, 37] };
+    }
+    return state;
+  }
+
+  var FRAMES = [
+    frame(0, { series: true }),
+    frame(8, { events: [{ k: 'citytaken', seat: 0, cell: 34, from: -1, cost: 40, cities: 1 }] }),
+    frame(16, { events: [{ k: 'generalspotted', seat: 3, victim: 1, cell: 28 }] }),
+    frame(24, { events: [{ k: 'generalcaptured', seat: 1, victim: 2, cell: 129,
+                           landGained: 24, armyGained: 118 },
+                         { k: 'eliminated', seat: 2, turn: 71, by: 1 }], dead: true }),
+    frame(32, { events: [{ k: 'growth', turn: 32, land: [44, 41, 0, 37],
+                           army: [999, 888, 0, 666] }], dead: true }),
+    frame(40, { events: [{ k: 'stackclash', cell: 55, attacker: 0, defender: 3,
+                           attackerArmy: 543, defenderArmy: 612, held: true }], dead: true }),
+    frame(240, { dead: true, over: true })
+  ];
+
+  function shim(html) {
+    // Replace ONLY the wasm entry. Everything else -- the CSS, the markup,
+    // chrome_common.js, broadcast_core.js and the appended game block -- is
+    // the shipped page, executed as shipped.
+    var stub =
+      '<script>window.GenStaticReplay={createCore:function(config){' +
+      'var i=0;return{start:function(){config.onStatus("open");' +
+      'if(config.onFirstFrame)config.onFirstFrame();' +
+      'var pump=function(){if(i>=window.parent.__FRAMES.length)return;' +
+      'config.onText(JSON.stringify(window.parent.__FRAMES[i++]));setTimeout(pump,60);};pump();},' +
+      'stop:function(){},sendCommand:function(){},clickMap:function(){},' +
+      'attachMinimap:function(){},setViewportSize:function(){},setViewportFit:function(){},' +
+      'getPaceStats:function(){return{draws:0};},' +
+      'getTransform:function(){return{scale:1,offsetX:0,offsetY:0,nativeW:640,nativeH:400,' +
+      'zoom:1,minZoom:1,maxZoom:12,fitScale:1,focusX:320,focusY:200,visW:640,visH:400};},' +
+      'zoomAt:function(){},setZoom:function(){},panBy:function(){},panByMap:function(){},' +
+      'panTo:function(){},resetView:function(){}};}};<\/script>';
+    return html
+      .replace('<script src="./static_replay.js"><\/script>', stub)
+      .replace('<head>', '<head><base href="./">');
+  }
+
+  function transcribe(doc) {
+    // Every DOM text run the page drew, painted onto a canvas at its MEASURED
+    // rect, so viewer_smoke's canvas-text instrumentation can judge it.
+    var canvas = document.getElementById('probe');
+    var ctx = canvas.getContext('2d');
+    var nodes = doc.querySelectorAll(
+      '#clock-time, #clock-caption, #tick-clock, #growthread, #stacktop, ' +
+      '.plate-name, .land-num, .plate-sub, .feed-row, .banner-chip, ' +
+      '#ec-headline, #ec-wincond, #ec-how, .ec-row, .fogchip');
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var text = (el.textContent || '').trim();
+      if (!text) continue;
+      var rect = el.getBoundingClientRect();
+      var style = doc.defaultView.getComputedStyle(el);
+      // Only what the page is actually SHOWING: a hidden endcard sits off the
+      // top of the frame by design, and transcribing it would report the
+      // chrome's resting state as text with nowhere to go.
+      if (rect.width <= 0 || rect.height <= 0) continue;
+      if (style.display === 'none' || style.visibility === 'hidden') continue;
+      if (parseFloat(style.opacity || '1') < 0.05) continue;
+      if (rect.bottom <= 0 || rect.right <= 0) continue;
+      ctx.font = style.fontSize + ' ' + (style.fontFamily || 'monospace');
+      ctx.fillStyle = 'rgba(242,232,216,0.02)';
+      ctx.fillText(text, rect.left, rect.top + rect.height);
+    }
+    return nodes.length;
+  }
+
+  window.__FRAMES = FRAMES;
+  var sizes = [[1280, 720], [620, 400], [360, 203]];
+  var frameEl = document.getElementById('frame');
+  var pageHtml = null;
+
+  function runSize(index, done) {
+    if (index >= sizes.length) { done(); return; }
+    var size = sizes[index];
+    frameEl.width = size[0];
+    frameEl.height = size[1];
+    frameEl.srcdoc = shim(pageHtml);
+    say('driving the shipped page at ' + size[0] + 'x' + size[1]);
+    setTimeout(function () {
+      var doc = frameEl.contentDocument;
+      var drawn = 0;
+      try {
+        // The fog lens on each seat in turn, exercised through the page's own
+        // chips rather than a private hook.
+        var chips = doc.querySelectorAll('#genband .fogchip');
+        for (var c = 0; c < chips.length; c++) chips[c].click();
+        drawn = transcribe(doc);
+      } catch (error) {
+        say('fixture failed: ' + error.message);
+        document.documentElement.setAttribute('data-replay-error', String(error.message));
+        return;
+      }
+      say('drew ' + drawn + ' text runs at ' + size[0] + 'x' + size[1]);
+      runSize(index + 1, done);
+    }, 2200);
+  }
+
+  fetch('./page.html').then(function (r) { return r.text(); }).then(function (html) {
+    pageHtml = html;
+    runSize(0, function () {
+      say('ok');
+      document.documentElement.setAttribute('data-replay-loaded', 'true');
+    });
+  }).catch(function (error) {
+    document.documentElement.setAttribute('data-replay-error',
+      'renderer fixture could not load page.html: ' + error.message);
+  });
+})();
+</script>
+</body>
+</html>

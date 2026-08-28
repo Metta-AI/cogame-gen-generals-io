@@ -1,0 +1,13 @@
+# ONE service, ONE image, TWO entrypoints (/bin/gen-generals-io and
+# /bin/gen-generals-io-player). The manifest's image placeholder is DERIVED
+# from the compose service name -- `{{GAME_IMAGE}}` is not a thing (lantern
+# 0.1.0) -- so the underscored service name below is what makes the manifest's
+# {{GEN_GENERALS_IO_IMAGE}} resolve.
+services:
+  gen_generals_io:
+    image: coworld-gen-generals-io:latest
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      network: host

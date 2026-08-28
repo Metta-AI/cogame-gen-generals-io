@@ -1,0 +1,35 @@
+[
+  {
+    "name": "gen-generals-io-landgrab",
+    "run": "/bin/gen-generals-io-player",
+    "env": {
+      "PLAYER_PROMPT": "Land is the only thing that compounds. Take it first, fight later.\nTurns 0-56: intent \"expand\", target null, reserve 0, cities \"cheap\",\nscouts 1. Never set reserve above 0 in this phase - armies sitting on your\ncrown are armies not claiming tiles, and an empty plain costs one army\nwhere an enemy tile costs its whole garrison.\nWatch \"standing\" every single plan. It is public and it is the truth. If\nyour land is the largest of the living, keep expanding; you are winning\nthe only race that pays every 25 turns.\nBreak a city as soon as your biggest visible stack is over 90: 40 armies\nbuys a tile that prints one army a turn forever, and by turn 200 that is\nworth more than the 40 tiles you could have claimed instead. Set cities\n\"always\" the first time your army total passes 150, and back to \"cheap\"\nonce you hold two.\nFrom turn ~120 on, set scouts 2 for one plan every time \"unknown_cells\"\nis above 40. You cannot win the endgame without knowing where at least one\ncrown is, and a scout costs 8 armies.\nSet intent \"attack\" with target on the nearest enemy tile only when your\nland lead is 10 or more, or when someone else has just eaten a crown - the\n\"standing\" line where a rival's land doubles in one plan is that event.\nSet intent \"defend\" the moment \"your_general\" reports threatened true, and\nkeep it there for two plans. Losing your crown loses everything you built;\nlosing five tiles costs five armies every 25 turns.",
+      "PLAYER_POLICY_LABEL": "gen-generals-io-landgrab"
+    }
+  },
+  {
+    "name": "gen-generals-io-regicide",
+    "run": "/bin/gen-generals-io-player",
+    "env": {
+      "PLAYER_PROMPT": "One crown is worth thirty tiles. Find one, then take it.\nTurns 0-32: intent \"expand\", reserve 0, cities \"never\", scouts 2. You are\nbuying map knowledge, not land. Two scouting turns in four is expensive\nand it is the whole plan - a crown you have seen never disappears from\n\"known_generals\", and every plan after this one is cheaper for it.\nThe moment \"known_generals\" is non-empty: intent \"raid\", target that\ncrown's cell, scouts 0, cities \"never\", reserve 10. Do not stop to take\nland on the way; the captain routes you round stacks bigger than yours.\nRead the target's owner in \"standing\" before you commit: if their army is\nmore than double yours, switch to \"gather\" for one plan to build the\nhammer, then raid. A raid that arrives 20 armies short hands them your\nwhole stack.\nIf two crowns are known, go for the one whose owner has the SMALLER army,\neven if it is further. You are not looking for a fair fight, you are\nlooking for an inheritance.\nIf you take a crown, immediately set intent \"expand\", cities \"always\",\nreserve 40 and scouts 0 for two plans: you have just inherited land you\nhave never seen and armies at half strength, and the other survivors can\nread exactly what happened in the public standing. Consolidate before you\nhunt again.\nSet intent \"defend\" whenever \"your_general\" reports threatened true, and\nraise reserve to 40 for the rest of the game afterwards. A hunter who\nloses their own crown finishes last.",
+      "PLAYER_POLICY_LABEL": "gen-generals-io-regicide"
+    },
+    "player": "ply_bac48eb1-662e-44f8-973d-f3e016dccf5d"
+  },
+  {
+    "name": "gen-generals-io-sprawl",
+    "run": "/bin/gen-generals-io-player",
+    "env": {
+      "PLAYER_SCRIPTED": "sprawl",
+      "PLAYER_POLICY_LABEL": "gen-generals-io-sprawl"
+    }
+  },
+  {
+    "name": "gen-generals-io-crown",
+    "run": "/bin/gen-generals-io-player",
+    "env": {
+      "PLAYER_SCRIPTED": "crown",
+      "PLAYER_POLICY_LABEL": "gen-generals-io-crown"
+    }
+  }
+]

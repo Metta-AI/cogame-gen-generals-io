@@ -1,0 +1,714 @@
+{
+  "$schema": "https://softmax.com/schemas/coworld-manifest.json",
+  "tags": [
+    "generals",
+    "grid",
+    "fog-of-war",
+    "conquest",
+    "ffa",
+    "zero-sum"
+  ],
+  "episode_timeout_minutes": 20,
+  "game": {
+    "name": "gen-generals-io",
+    "owner": "daveey@softmax.com",
+    "description": "Four commanders, one crown each, on a seeded four-fold-symmetric grid. You see only the tiles you own and the ring around them. Take a rival's crown and you inherit everything they own.",
+    "runnable": {
+      "type": "game",
+      "image": "{{GEN_GENERALS_IO_IMAGE}}",
+      "run": [
+        "/bin/gen-generals-io"
+      ],
+      "env": {
+        "ANTHROPIC_API_KEY_URI": "secret://coworld/gen-generals-io/anthropic_api_key"
+      },
+      "source_url": "https://github.com/Metta-AI/cogame-gen-generals-io/tree/main"
+    },
+    "replay_viewer": {
+      "bundle": "static-replay-viewer"
+    },
+    "config_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tokens",
+        "players"
+      ],
+      "properties": {
+        "num_agents": {
+          "type": "integer",
+          "default": 4,
+          "minimum": 4,
+          "maximum": 4
+        },
+        "minPlayers": {
+          "type": "integer",
+          "default": 4
+        },
+        "teams": {
+          "type": "integer",
+          "default": 4
+        },
+        "cogsPerTeam": {
+          "type": "integer",
+          "default": 1
+        },
+        "seed": {
+          "type": "integer",
+          "default": 1734029581
+        },
+        "boardW": {
+          "type": "integer",
+          "default": 16
+        },
+        "boardH": {
+          "type": "integer",
+          "default": 10
+        },
+        "mountainPct": {
+          "type": "integer",
+          "default": 22
+        },
+        "cityCount": {
+          "type": "integer",
+          "default": 8
+        },
+        "cityArmy": {
+          "type": "integer",
+          "default": 40
+        },
+        "maxTurns": {
+          "type": "integer",
+          "default": 240
+        },
+        "growthPeriod": {
+          "type": "integer",
+          "default": 25
+        },
+        "directiveEvery": {
+          "type": "integer",
+          "default": 8
+        },
+        "scoutArmy": {
+          "type": "integer",
+          "default": 8
+        },
+        "missionMaxSteps": {
+          "type": "integer",
+          "default": 12
+        },
+        "defendTurns": {
+          "type": "integer",
+          "default": 6
+        },
+        "attempt1Ms": {
+          "type": "integer",
+          "default": 7000
+        },
+        "retryMs": {
+          "type": "integer",
+          "default": 3000
+        },
+        "turnBudgetMs": {
+          "type": "integer",
+          "default": 11000
+        },
+        "turnSpacingMs": {
+          "type": "integer",
+          "default": 9000
+        },
+        "wallClockBudgetSeconds": {
+          "type": "integer",
+          "default": 660
+        },
+        "episodeTimeoutSeconds": {
+          "type": "integer",
+          "default": 1200
+        },
+        "lobbyJoinTimeoutTicks": {
+          "type": "integer",
+          "default": 2400
+        },
+        "startWaitTicks": {
+          "type": "integer",
+          "default": 48
+        },
+        "gameOverTicks": {
+          "type": "integer",
+          "default": 72
+        },
+        "maxOutputTokens": {
+          "type": "integer",
+          "default": 700
+        },
+        "fastMode": {
+          "type": "boolean",
+          "default": true
+        },
+        "showPlayerLabels": {
+          "type": "boolean",
+          "default": false
+        },
+        "fullyObservable": {
+          "type": "boolean",
+          "default": false
+        },
+        "model": {
+          "type": "string",
+          "default": ""
+        },
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 4,
+          "maxItems": 4,
+          "description": "One websocket token per seat. Runner-injected: never write it into a game_config."
+        },
+        "players": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "slots": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 0,
+          "maxItems": 4
+        }
+      }
+    },
+    "results_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "names",
+        "scores",
+        "win",
+        "reason",
+        "endRule",
+        "rank",
+        "land",
+        "turnsPlayed"
+      ],
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "scores": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "win": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "winner": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 3
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "deadline",
+            "fault"
+          ]
+        },
+        "endRule": {
+          "type": "string",
+          "enum": [
+            "conquest",
+            "full_time",
+            "wall_clock",
+            "sim_fault",
+            "host_error"
+          ]
+        },
+        "rank": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "land": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "army": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "cities": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "generalsCaptured": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "eliminatedTurn": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "eliminatedBy": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "tilesTaken": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "tilesLost": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "movesMade": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "invalidMoves": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "passes": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "turnsPlayed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "boardW": {
+          "type": "integer",
+          "minimum": 6
+        },
+        "boardH": {
+          "type": "integer",
+          "minimum": 6
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "policyKinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "llmTurns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "fallbackTurns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "directivesRejected": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "deadSeats": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "stopDetail": {
+          "type": "string"
+        }
+      }
+    },
+    "protocols": {
+      "player": {
+        "type": "text",
+        "value": "# Wire protocol\n\n## The Coworld runtime contract\n\nIn: `COGAME_CONFIG_URI`. Out: `COGAME_RESULTS_URI`, `COGAME_SAVE_REPLAY_URI`,\n`COGAME_PLAYER_FAILURE_URI`, `COGAME_EVENTS_URI`, `COGAME_METRICS_URI`.\n`COGAME_LOAD_REPLAY_URI` + `/client/replay` drive local replay mode.\n`COGAME_HOST` / `COGAME_PORT` bind the server.\n\nHTTP: `GET /healthz`, `GET /client/player?slot=&token=` (token-checked, and it\ndoes **not** open the player socket), `GET /client/global`,\n`GET /client/replay`, `GET /client/<asset>`, `GET /replay-data`,\n`GET /reward`. Websockets: `/player?slot=<i>&token=<t>` (403 on a bad slot or\ntoken, 409 on a duplicate) and `/global`.\n\n## The player socket\n\nA seat sends **one Sprite v1 chat frame** (`0x81`) carrying its registration,\nre-sent ten times over the first ten seconds because joins are\nslot-sequential:\n\n```json\n{\"type\":\"register\",\"policy\":\"<label, <=48 runes>\",\n \"prompt\":\"<PLAYER_PROMPT or empty, <=4000 runes>\",\n \"scripted\":\"sprawl\"|\"crown\"|null}\n```\n\nA seat that registers with neither field, or never registers, is seated as\n`sprawl`. Any OTHER chat text from a seat is dropped: this game has no\ninter-seat channel of any kind \u2014 no chat, no radio, no `say`, no emote.\n\nThe seat then sends the Sprite v1 Ready packet (`0x85`) after each received\nframe, which is legitimate here because **a seat sends no inputs**: every\ndecision is made in the game server, which calls the LLM once every eight\nturns with all living seats batched into ONE parallel request.\n\nThe game sends the seat:\n\n```json\n{\"type\":\"welcome\",\"protocol\":\"gen-generals-io.player.v1\",\"slot\":0,\n \"alias\":\"RED-alpha\",\"turns\":240,\"directive_every\":8}\n{\"type\":\"turn\",\"turn\":96,\"of\":240,\"you\":\"RED-alpha\",\"alive\":true}\n{\"done\":true,\"result\":{...the results document...}}\n```\n\nA seat frame carries **nothing a seat may not know**: its own alias, the turn\nand whether it is still standing. No board, no rival, and never a real policy\nname. An eliminated seat keeps receiving frames and exits 0 with everyone\nelse \u2014 elimination is a game state, not a disconnection.\n\n"
+      },
+      "global": {
+        "type": "text",
+        "value": "## The spectator socket\n\n`/global` speaks the Sprite v1 binary protocol: sprite definitions, object\nplacements, a viewport and a layer, exactly as `client/broadcast_core.js`\ndecodes them. The broadcast chrome rides as the LABEL of the reserved 1 \u00d7 1\nsprite id 4090, which is what makes it survive a hosted replay.\n\nOne chrome object per presentation frame. The inherited keys (`t`, `mt`,\n`ph`, `lob`, `sp`, `mx`, `st`, `lp`, `sk`, `ff`, `en`, `mm`, `teams`,\n`roster`, `events`, `lead`, `lulls`, `beats`, `over`) are the starter's;\ngen-generals-io adds:\n\n```json\n{\"turn\": 96, \"turns\": 240, \"growthIn\": 4, \"growthEvery\": 25,\n \"w\": 16, \"h\": 10,\n \"cells\": [{\"i\": 37, \"k\": \"plain\", \"o\": 0, \"a\": 54}],\n \"gen\":   [17, 28, -1, 142],\n \"alive\": [true, true, false, true],\n \"stand\": {\"land\": [31,27,0,34], \"army\": [210,188,0,156], \"cities\": [1,2,0,0]},\n \"out\":   [-1, -1, 71, -1],\n \"outBy\": [-1, -1, 1, -1],\n \"plan\":  [{\"seat\": 0, \"turn\": 96, \"intent\": \"expand\", \"source\": \"llm\",\n            \"note\": \"taking the middle before blue does\"}]}\n```\n\n`cells` is a **delta** (the full array on the first frame and on every\nkeyframe); `i` is a cell index and `o` a seat index or `-1` for neutral.\n`gen[s]` is seat `s`'s crown cell, or `-1` once captured. **The per-seat fog\nis NOT transmitted**: the viewer derives `visible[s] = owned \u222a\n8-neighbours(owned)` in the browser exactly as the sim does, which costs zero\nreplay bytes and cannot drift.\n\n## Derived events \u2014 a closed enum of twelve kinds\n\n`phase`, `growth`, `claim`, `citytaken`, `tilelost`, `stackclash`,\n`generalspotted`, `generalcaptured`, `eliminated`, `plan`, `fallback`, `end`.\n\n**Beats** \u2014 the scrubber markers, and the only kinds the game block draws:\n`citytaken`, `generalspotted`, `generalcaptured`, `end`. Each is a labelled,\nclickable button that seeks on click.\n\n## The replay\n\nBinary, magic `COWLDGEN`:\n\n```\n\"COWLDGEN\" | u16 formatVersion | u16 len + game name | u16 len + game version\n           | u32 len + the resolved config JSON\n           | records: u8 kind, u32 length, payload\n```\n\nRecord kinds: `1` join, `2` **plan input** (load-bearing, re-applied before\nthe turn it belongs to is stepped), `3` chat (`register` / `plan` /\n`fallback` / `budget_guard` / `stop` / `result`), `4` hash (u32 turn, u32\n`gameHash`), `5` leave.\n\nThe board is **re-derived from the seed** rather than stored \u2014 it is in\n`gameHash` from turn 0, so a divergence surfaces immediately. Everything the\nviewer needs is in the bytes; no server is contacted except S3 for the file.\n`tools/replay_summary.py` (Python 3 stdlib only) prints one strict-UTF-8 JSON\nobject describing a replay.\n"
+      }
+    },
+    "docs": {
+      "readme": {
+        "type": "text",
+        "value": "# cogame-gen-generals-io\n\n**Four crowns, one grid, and a fog you have to walk into.**\n\n`gen-generals-io` is a four-seat, free-for-all, fog-of-war conquest game on a\n16 \u00d7 10 grid \u2014 a standalone generals.io-style coworld. Every commander starts\non one crowned tile in one corner of a four-fold-symmetric board, sees only\nthe tiles it owns and the ring of tiles touching them, and spends one move a\nturn pushing armies outward.\n\nArmies grow on cities and crowns every turn, and on **every owned tile every\n25 turns** \u2014 land is production. Neutral cities hold 40 armies and are the\nonly toll on the board. And then the snowball: **capture another commander's\ncrown and you inherit every tile they own** \u2014 their land, their armies\n(halved), their cities \u2014 and they are out. Last crown standing wins; if the\nclock runs out first the ranking is survival, then land, then army, then\ncities.\n\nYou always know, from the public standings, exactly how much land and army\neach rival has. You never know **where** any of it is, or where their crown\nis, until you walk a scout into their half and see it.\n\n## A policy is just a prompt\n\nBoth champions are LLM prompt policies; both fillers are scripted baselines;\nall four are the same image, switched by environment:\n\n```bash\ncoworld upload-policy coworld-gen-generals-io:latest \\\n  --name my-generals --run /bin/gen-generals-io-player \\\n  --secret-env PLAYER_PROMPT=\"Land is the only thing that compounds...\"\n```\n\n`PLAYER_SCRIPTED=sprawl` or `PLAYER_SCRIPTED=crown` seats a scripted baseline\ninstead. A seat that sets neither plays `sprawl`.\n\nThe LLM decides the **plan**, once every eight turns: an intent, a target\ncell, a crown reserve, a city policy and how much of the next eight turns\ngoes to scouting. A deterministic captain compiles that plan into exactly one\nlegal move per turn, every turn, **from the seat's own fogged view** \u2014 and\nthe browser runs the identical Nim code, which is why the replay carries 120\nplans rather than 960 moves.\n\n## Watching it\n\nThe replay is a **static wasm bundle**, never a pod: `tools/build_replay_viewer.sh`\ncompiles the same `src/generals` sim modules to wasm through\n`Dockerfile.replay-viewer` and bundles them with the starter's broadcast\nchrome. The viewer re-simulates every turn in the browser and checks its\n`gameHash` against the recording every tick.\n\nThe board draws edge to edge with the exact garrison integer on every\noccupied cell, and a **fog lens** chip row lets a spectator watch the board as\nany one commander saw it \u2014 a raid arriving out of the dark exactly as the\nvictim experienced it.\n\n## Layout\n\n```\nsrc/gen_generals_io.nim         the game server entrypoint\nsrc/gen_generals_io_player.nim  the thin seat registrar\nsrc/generals/                   the sim, the decision layer, the server\nreplay-viewer/gen_replay.nim    the wasm entry (same sim modules)\nclient/                         chrome_common.js + broadcast_core.js + the page\ntools/                          the build hook, the CI harness, forensics\ndocs/RULES.md                   the rules, and the divergences from generals.io\ndocs/PROTOCOL.md                the wire protocol\ndocs/COMMANDING.md              how to write a plan prompt\n```\n\n## Building and testing\n\nThe sandbox has no Docker, no Nim and no emsdk: `ci.yml` is the harness.\n\n```bash\nnim r --path:src tests/tests.nim          # the sim, scoring, replay and manifest tests\n./tools/ci/docker_smoke.sh coworld-gen-generals-io:ci\n./tools/build_replay_viewer.sh \"$PWD/dist/static-replay-viewer\"\nnode tools/ci/viewer_smoke.mjs --bundle dist/static-replay-viewer \\\n  --replay dist/smoke/replay.json --timeout 90 --soak 10 --strict-text-bounds\n```\n\nForked from [`Metta-AI/coworld-ctf`](https://github.com/Metta-AI/coworld-ctf)\n(paintbot): the tick loop, the four-team seating and aliases, the decision\nlayer, the replay codec and the static wasm viewer are all its.\n"
+      },
+      "pages": [
+        {
+          "id": "rules.md",
+          "title": "Rules",
+          "content": {
+            "type": "text",
+            "value": "# gen-generals-io \u2014 the rules\n\nFour commanders. One 16 \u00d7 10 grid. Everyone starts on a crown in a corner,\nsees only what they own and the ring around it, and spends one move a turn\npushing armies outward.\n\n## The board\n\n* `boardW` \u00d7 `boardH` = **16 \u00d7 10** (12 \u00d7 8 in `blitz`), generated once at\n  reset from the episode seed and **four-fold symmetric**: the top-left\n  quadrant is drawn, then mirrored into the other three. Every seat gets a\n  congruent start \u2014 the same crown offset, the same mountains, the same cities\n  and the same distances to each rival.\n* Cells are `plain`, `mountain`, `city` or `general`. Mountains are impassable\n  and never owned. A cell holds an integer army.\n* **8 mountains and 2 cities per quadrant** (32 and 8 on the board), placed by\n  rejection sampling at Chebyshev \u2265 2 from the crown (mountains) and \u2265 3 from\n  the crown and \u2265 2 from each other (cities). A symmetric connectivity repair\n  then opens any pocket the mountains sealed off, converting the first\n  mountain on the cheapest path **and its three mirror images** to plain \u2014 so\n  the layout stays symmetric and every non-mountain cell stays reachable.\n* Neutral cities hold **40** armies (50 in `citadels`) and are the only toll\n  on the board.\n\n## The turn\n\nOne tick is one turn. `maxTurns` = 240 (160 in `blitz`).\n\n1. **Directive install** \u2014 every 8 turns each living seat's plan is installed.\n2. **Move compilation** \u2014 the deterministic captain compiles one plan into at\n   most one move per seat, from **that seat's fogged view only**.\n3. **Move resolution**, one at a time, in the rotated order\n   `order[k] = (turn + k) mod 4` \u2014 priority rounds the table every turn.\n   * A move is discarded (and counted in `invalidMoves`) if the source is not\n     owned, holds fewer than 2 armies, the target is off the board or a\n     mountain, or the seat is no longer alive.\n   * `amount` is clamped into `1 .. army(source) - 1`: a tile always keeps at\n     least one army.\n   * Onto your own tile the armies add. Onto a neutral or enemy tile: send\n     **more** than the garrison and you take the tile with the difference on\n     it; send the same or less and the tile keeps the difference and its owner.\n4. **Per-turn growth** \u2014 every **owned** city and crown gains +1. Neutral\n   cities do **not** grow.\n5. **Periodic growth** \u2014 every `growthPeriod` (25) turns, every owned cell\n   gains +1, whatever its kind.\n6. **Vision and memory** \u2014 a seat sees a cell if it owns it or the cell\n   touches one of its cells (all eight directions). What it saw is remembered\n   with the turn it was seen; the army on a remembered cell is unknown.\n7. **The sim guard** runs every turn.\n8. **The hash** is written and the end conditions are checked.\n\n## Crown capture\n\nMove more armies onto a rival's crown than sit on it and you take\n**everything they own**: every other tile they hold becomes yours with its\narmy halved (integer division), their crown becomes a **city** of yours\nholding the surviving attacker army, and they are out of the game. The captor\ngets a `generalcaptured` event and the victim an `eliminated` one.\n\n## Scoring\n\nMeasured at the final turn, first difference decides:\n\n1. still alive\n2. among the dead, who lasted longer\n3. most land\n4. biggest army\n5. most cities\n\n`placePoint(rank) = (4 - 1 - rank) / (4 - 1)` \u2192 `[1, 2/3, 1/3, 0]`, averaged\nover a tie group. **`sum(scores) == 2.0` on every episode**, ties included:\nstrictly constant-sum, higher is better, nothing is ever negative.\n\n## Endings\n\n| `reason` | `endRule` | when |\n|---|---|---|\n| `complete` | `conquest` | exactly one crown is left |\n| `complete` | `full_time` | turn == `maxTurns` with two or more alive |\n| `deadline` | `wall_clock` | the 660 s engine stop fired |\n| `fault` | `sim_fault` | the sim guard tripped |\n| `fault` | `host_error` | an unexpected server-side exception |\n\nNo other string is ever emitted.\n\n## The scripted baselines\n\nBoth emit the same plan object an LLM does, through the same validator, and\nboth are pure functions of the seat's own fogged view.\n\n**`sprawl`** \u2014 `defend` when the crown is threatened, `expand` while land is\nunder a quarter of the board, `attack` at the nearest visible enemy tile\notherwise. `reserve` 0, `cities` `cheap`, `scouts` 1. It is also the\nper-turn fallback, the driver of a no-show seat, and the default.\n\n**`crown`** \u2014 `defend` when threatened, `raid` the nearest known crown,\n`expand` otherwise. `reserve` 20, `cities` `never`, `scouts` 2. Deliberately\na different SHAPE, so the ladder gets a spread rather than two versions of\none bot.\n\n## Documented divergences from generals.io\n\nThis is an adaptation of a public specification, not a reproduction of\nanyone's engine, and no test here compares a trajectory to a reference\nimplementation.\n\n* A move carries an **explicit `amount`** in `1 .. army-1` rather than only\n  \"all\" or \"half\". A strict superset, and it is what makes `reserve` exact.\n* **Priority rotates by turn number** rather than by a server-side move queue.\n* **Generals start at 1 army**, on a board generated by this repo's own\n  symmetric generator.\n* **Swamps, lookout towers, desert tiles and the 50/50 city-spawn variance\n  are absent.**\n* **A 240-turn clock** stands in for generals.io's open-ended games.\n"
+          }
+        },
+        {
+          "id": "protocol.md",
+          "title": "Wire protocol",
+          "content": {
+            "type": "text",
+            "value": "# Wire protocol\n\n## The Coworld runtime contract\n\nIn: `COGAME_CONFIG_URI`. Out: `COGAME_RESULTS_URI`, `COGAME_SAVE_REPLAY_URI`,\n`COGAME_PLAYER_FAILURE_URI`, `COGAME_EVENTS_URI`, `COGAME_METRICS_URI`.\n`COGAME_LOAD_REPLAY_URI` + `/client/replay` drive local replay mode.\n`COGAME_HOST` / `COGAME_PORT` bind the server.\n\nHTTP: `GET /healthz`, `GET /client/player?slot=&token=` (token-checked, and it\ndoes **not** open the player socket), `GET /client/global`,\n`GET /client/replay`, `GET /client/<asset>`, `GET /replay-data`,\n`GET /reward`. Websockets: `/player?slot=<i>&token=<t>` (403 on a bad slot or\ntoken, 409 on a duplicate) and `/global`.\n\n## The player socket\n\nA seat sends **one Sprite v1 chat frame** (`0x81`) carrying its registration,\nre-sent ten times over the first ten seconds because joins are\nslot-sequential:\n\n```json\n{\"type\":\"register\",\"policy\":\"<label, <=48 runes>\",\n \"prompt\":\"<PLAYER_PROMPT or empty, <=4000 runes>\",\n \"scripted\":\"sprawl\"|\"crown\"|null}\n```\n\nA seat that registers with neither field, or never registers, is seated as\n`sprawl`. Any OTHER chat text from a seat is dropped: this game has no\ninter-seat channel of any kind \u2014 no chat, no radio, no `say`, no emote.\n\nThe seat then sends the Sprite v1 Ready packet (`0x85`) after each received\nframe, which is legitimate here because **a seat sends no inputs**: every\ndecision is made in the game server, which calls the LLM once every eight\nturns with all living seats batched into ONE parallel request.\n\nThe game sends the seat:\n\n```json\n{\"type\":\"welcome\",\"protocol\":\"gen-generals-io.player.v1\",\"slot\":0,\n \"alias\":\"RED-alpha\",\"turns\":240,\"directive_every\":8}\n{\"type\":\"turn\",\"turn\":96,\"of\":240,\"you\":\"RED-alpha\",\"alive\":true}\n{\"done\":true,\"result\":{...the results document...}}\n```\n\nA seat frame carries **nothing a seat may not know**: its own alias, the turn\nand whether it is still standing. No board, no rival, and never a real policy\nname. An eliminated seat keeps receiving frames and exits 0 with everyone\nelse \u2014 elimination is a game state, not a disconnection.\n\n## The spectator socket\n\n`/global` speaks the Sprite v1 binary protocol: sprite definitions, object\nplacements, a viewport and a layer, exactly as `client/broadcast_core.js`\ndecodes them. The broadcast chrome rides as the LABEL of the reserved 1 \u00d7 1\nsprite id 4090, which is what makes it survive a hosted replay.\n\nOne chrome object per presentation frame. The inherited keys (`t`, `mt`,\n`ph`, `lob`, `sp`, `mx`, `st`, `lp`, `sk`, `ff`, `en`, `mm`, `teams`,\n`roster`, `events`, `lead`, `lulls`, `beats`, `over`) are the starter's;\ngen-generals-io adds:\n\n```json\n{\"turn\": 96, \"turns\": 240, \"growthIn\": 4, \"growthEvery\": 25,\n \"w\": 16, \"h\": 10,\n \"cells\": [{\"i\": 37, \"k\": \"plain\", \"o\": 0, \"a\": 54}],\n \"gen\":   [17, 28, -1, 142],\n \"alive\": [true, true, false, true],\n \"stand\": {\"land\": [31,27,0,34], \"army\": [210,188,0,156], \"cities\": [1,2,0,0]},\n \"out\":   [-1, -1, 71, -1],\n \"outBy\": [-1, -1, 1, -1],\n \"plan\":  [{\"seat\": 0, \"turn\": 96, \"intent\": \"expand\", \"source\": \"llm\",\n            \"note\": \"taking the middle before blue does\"}]}\n```\n\n`cells` is a **delta** (the full array on the first frame and on every\nkeyframe); `i` is a cell index and `o` a seat index or `-1` for neutral.\n`gen[s]` is seat `s`'s crown cell, or `-1` once captured. **The per-seat fog\nis NOT transmitted**: the viewer derives `visible[s] = owned \u222a\n8-neighbours(owned)` in the browser exactly as the sim does, which costs zero\nreplay bytes and cannot drift.\n\n## Derived events \u2014 a closed enum of twelve kinds\n\n`phase`, `growth`, `claim`, `citytaken`, `tilelost`, `stackclash`,\n`generalspotted`, `generalcaptured`, `eliminated`, `plan`, `fallback`, `end`.\n\n**Beats** \u2014 the scrubber markers, and the only kinds the game block draws:\n`citytaken`, `generalspotted`, `generalcaptured`, `end`. Each is a labelled,\nclickable button that seeks on click.\n\n## The replay\n\nBinary, magic `COWLDGEN`:\n\n```\n\"COWLDGEN\" | u16 formatVersion | u16 len + game name | u16 len + game version\n           | u32 len + the resolved config JSON\n           | records: u8 kind, u32 length, payload\n```\n\nRecord kinds: `1` join, `2` **plan input** (load-bearing, re-applied before\nthe turn it belongs to is stepped), `3` chat (`register` / `plan` /\n`fallback` / `budget_guard` / `stop` / `result`), `4` hash (u32 turn, u32\n`gameHash`), `5` leave.\n\nThe board is **re-derived from the seed** rather than stored \u2014 it is in\n`gameHash` from turn 0, so a divergence surfaces immediately. Everything the\nviewer needs is in the bytes; no server is contacted except S3 for the file.\n`tools/replay_summary.py` (Python 3 stdlib only) prints one strict-UTF-8 JSON\nobject describing a replay.\n"
+          }
+        },
+        {
+          "id": "commanding.md",
+          "title": "Writing a generals plan prompt",
+          "content": {
+            "type": "text",
+            "value": "# Writing a generals plan prompt\n\nA policy here is just a prompt. The game server holds your seat's\n`PLAYER_PROMPT`, and every eight turns it sends Claude a fixed system prompt\n(the rules), your guidance, and your seat's **fogged** view of the board. You\nreply with one plan object; a deterministic captain executes it, one move a\nturn, for the next eight turns.\n\n## What you are actually deciding\n\n```json\n{\"intent\": \"expand|gather|attack|defend|scout|raid\",\n \"target\": [x, y] or null,\n \"reserve\": 0,\n \"cities\": \"never|cheap|always\",\n \"scouts\": 1,\n \"note\": \"<=160 characters, spectator-only\"}\n```\n\n* **`intent`** picks the mission the captain walks. `expand` claims the\n  nearest unclaimed land, preferring land that already touches two of your\n  tiles. `gather` walks your second-biggest stack into your biggest.\n  `attack` walks your biggest stack at `target`, else the nearest visible\n  enemy tile, else the nearest one you remember. `defend` walks armies home.\n  `scout` sends at most 8 armies into the nearest fog. `raid` walks your\n  biggest stack at the nearest crown you have SEEN, routing around visible\n  enemy stacks bigger than itself.\n* **`reserve`** is exact: when the captain moves off your crown it sends\n  `army(crown) - 1 - reserve`, and it does not move at all if that is below 1.\n* **`cities`** decides when a stack is spent on a neutral city: `always`\n  buys when the stack beats the garrison, `cheap` when it doubles it.\n* **`scouts`** is a share of TURNS, not a number of units: `scouts: 2` means\n  two turns in every four go to walking into the dark.\n* **`note`** never reaches another seat. It is the line a spectator reads in\n  the match feed under your alias, and it is the whole reason a replay of\n  this game is watchable.\n\n## What the prompt should do\n\n1. **Say what to do in the first thirty turns.** Land compounds; a plan that\n   starts fighting on turn 8 loses to one that starts claiming.\n2. **Read `standing`.** Land, army, cities and who is alive are PUBLIC every\n   turn for every seat. It is the only rival information you can trust, and a\n   rival whose land doubles in one plan has just eaten a crown.\n3. **Say when to stop expanding.** The fog is the reason: you cannot raid a\n   crown you have never seen, and `scouts` is what buys that knowledge.\n4. **Name the defend trigger.** `your_general.threatened` is in the view.\n   Losing your crown loses everything you built.\n5. **Keep it under 4000 runes.** Anything longer is truncated, on a rune\n   boundary.\n\n## What the prompt cannot do\n\nIt cannot see a rival's plan, this turn's or any past turn's; it cannot read\nanother seat's `note`; it cannot learn which policy or player holds a rival\nseat; and it cannot see the army, owner or kind of any cell outside\n`visible \u222a remembered`. There is no channel to any other seat.\n\n## Two worked examples\n\nThe shipped champions are in `tools/ci/policies.json`:\n`gen-generals-io-landgrab` plays land as the only thing that compounds;\n`gen-generals-io-regicide` buys map knowledge early and hunts crowns. They\nare the same image and the same binary \u2014 only the environment differs.\n"
+          }
+        }
+      ]
+    }
+  },
+  "player": [
+    {
+      "id": "sprawl",
+      "type": "player",
+      "name": "gen-generals-io-sprawl",
+      "description": "The strong simple generals.io opening, held all game: expand until you hold a quarter of the board, then push at the nearest enemy tile. It is also the server-side fallback for any turn an LLM seat cannot answer.",
+      "image": "{{GEN_GENERALS_IO_IMAGE}}",
+      "run": [
+        "/bin/gen-generals-io-player"
+      ],
+      "env": {
+        "PLAYER_SCRIPTED": "sprawl"
+      },
+      "source_url": "https://github.com/Metta-AI/cogame-gen-generals-io/tree/main",
+      "resources": {
+        "requests": {
+          "cpu": "200m",
+          "memory": "128Mi"
+        },
+        "limits": {
+          "cpu": "1"
+        }
+      }
+    },
+    {
+      "id": "crown",
+      "type": "player",
+      "name": "gen-generals-io-crown",
+      "description": "Buys map knowledge early and pays for it in land: two scouting turns in four, twenty armies parked on the crown, and a raid the moment a rival crown is known.",
+      "image": "{{GEN_GENERALS_IO_IMAGE}}",
+      "run": [
+        "/bin/gen-generals-io-player"
+      ],
+      "env": {
+        "PLAYER_SCRIPTED": "crown"
+      },
+      "source_url": "https://github.com/Metta-AI/cogame-gen-generals-io/tree/main",
+      "resources": {
+        "requests": {
+          "cpu": "200m",
+          "memory": "128Mi"
+        },
+        "limits": {
+          "cpu": "1"
+        }
+      }
+    }
+  ],
+  "variants": [
+    {
+      "id": "ffa",
+      "name": "Four crowns (16x10, 240 turns)",
+      "description": "Four commanders, one crown each, on a seeded four-fold-symmetric 16x10 grid. You see only the tiles you own and the ring around them. Cities and crowns grow every turn; every tile you own grows every 25 turns. Take a rival's crown and you inherit everything they own. Last crown standing wins.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Red"
+          },
+          {
+            "name": "Blue"
+          },
+          {
+            "name": "Green"
+          },
+          {
+            "name": "Yellow"
+          }
+        ],
+        "num_agents": 4,
+        "minPlayers": 4,
+        "teams": 4,
+        "cogsPerTeam": 1,
+        "boardW": 16,
+        "boardH": 10,
+        "mountainPct": 22,
+        "cityCount": 8,
+        "cityArmy": 40,
+        "maxTurns": 240,
+        "growthPeriod": 25,
+        "directiveEvery": 8,
+        "scoutArmy": 8,
+        "missionMaxSteps": 12,
+        "defendTurns": 6,
+        "attempt1Ms": 7000,
+        "retryMs": 3000,
+        "turnBudgetMs": 11000,
+        "turnSpacingMs": 9000,
+        "wallClockBudgetSeconds": 660,
+        "lobbyJoinTimeoutTicks": 2400,
+        "startWaitTicks": 48,
+        "gameOverTicks": 72,
+        "fastMode": true,
+        "showPlayerLabels": false,
+        "fullyObservable": false,
+        "seed": 1734029581
+      }
+    },
+    {
+      "id": "blitz",
+      "name": "Blitz (12x8, 160 turns, growth every 15)",
+      "description": "A tighter map and a faster production beat: the corners are eight tiles apart, the fog runs out early, and a crown is usually taken before the clock is.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Red"
+          },
+          {
+            "name": "Blue"
+          },
+          {
+            "name": "Green"
+          },
+          {
+            "name": "Yellow"
+          }
+        ],
+        "num_agents": 4,
+        "minPlayers": 4,
+        "teams": 4,
+        "cogsPerTeam": 1,
+        "boardW": 12,
+        "boardH": 8,
+        "mountainPct": 18,
+        "cityCount": 4,
+        "cityArmy": 40,
+        "maxTurns": 160,
+        "growthPeriod": 15,
+        "directiveEvery": 8,
+        "scoutArmy": 8,
+        "missionMaxSteps": 12,
+        "defendTurns": 6,
+        "attempt1Ms": 7000,
+        "retryMs": 3000,
+        "turnBudgetMs": 11000,
+        "turnSpacingMs": 9000,
+        "wallClockBudgetSeconds": 660,
+        "lobbyJoinTimeoutTicks": 2400,
+        "startWaitTicks": 48,
+        "gameOverTicks": 72,
+        "fastMode": true,
+        "showPlayerLabels": false,
+        "fullyObservable": false,
+        "seed": 1734029581
+      }
+    },
+    {
+      "id": "citadels",
+      "name": "Citadels (16x10, twelve cities)",
+      "description": "Twelve neutral cities at a garrison of 50 and a slower 30-turn production beat: land alone stops paying, and the map is decided by who can afford the keeps.",
+      "game_config": {
+        "players": [
+          {
+            "name": "Red"
+          },
+          {
+            "name": "Blue"
+          },
+          {
+            "name": "Green"
+          },
+          {
+            "name": "Yellow"
+          }
+        ],
+        "num_agents": 4,
+        "minPlayers": 4,
+        "teams": 4,
+        "cogsPerTeam": 1,
+        "boardW": 16,
+        "boardH": 10,
+        "mountainPct": 22,
+        "cityCount": 12,
+        "cityArmy": 50,
+        "maxTurns": 240,
+        "growthPeriod": 30,
+        "directiveEvery": 8,
+        "scoutArmy": 8,
+        "missionMaxSteps": 12,
+        "defendTurns": 6,
+        "attempt1Ms": 7000,
+        "retryMs": 3000,
+        "turnBudgetMs": 11000,
+        "turnSpacingMs": 9000,
+        "wallClockBudgetSeconds": 660,
+        "lobbyJoinTimeoutTicks": 2400,
+        "startWaitTicks": 48,
+        "gameOverTicks": 72,
+        "fastMode": true,
+        "showPlayerLabels": false,
+        "fullyObservable": false,
+        "seed": 1734029581
+      }
+    }
+  ],
+  "certification": {
+    "players": [
+      {
+        "player_id": "sprawl"
+      },
+      {
+        "player_id": "crown"
+      },
+      {
+        "player_id": "sprawl"
+      },
+      {
+        "player_id": "crown"
+      }
+    ],
+    "game_config": {
+      "players": [
+        {
+          "name": "Red"
+        },
+        {
+          "name": "Blue"
+        },
+        {
+          "name": "Green"
+        },
+        {
+          "name": "Yellow"
+        }
+      ],
+      "num_agents": 4,
+      "minPlayers": 4,
+      "teams": 4,
+      "cogsPerTeam": 1,
+      "boardW": 16,
+      "boardH": 10,
+      "mountainPct": 22,
+      "cityCount": 8,
+      "cityArmy": 40,
+      "maxTurns": 240,
+      "growthPeriod": 25,
+      "directiveEvery": 8,
+      "scoutArmy": 8,
+      "missionMaxSteps": 12,
+      "defendTurns": 6,
+      "turnSpacingMs": 0,
+      "wallClockBudgetSeconds": 240,
+      "lobbyJoinTimeoutTicks": 600,
+      "startWaitTicks": 48,
+      "gameOverTicks": 72,
+      "fastMode": true,
+      "showPlayerLabels": false,
+      "fullyObservable": false,
+      "seed": 42
+    }
+  }
+}

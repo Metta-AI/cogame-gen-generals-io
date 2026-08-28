@@ -1,0 +1,239 @@
+{
+  "picked": {
+    "sprawlLandDivisor": 4,
+    "crownReserve": 20,
+    "crownScouts": 2
+  },
+  "margin": 0.04166666666666674,
+  "seeds": [
+    1734029581,
+    42,
+    7,
+    99,
+    1234,
+    555,
+    8888,
+    31337
+  ],
+  "rotations": 4,
+  "objective": "sprawl ahead of crown (margin > 0) with crown keeping its documented shape: armies reserved on the crown and more scouting than sprawl",
+  "note": "margin is sprawl's mean placement point minus crown's, over every seed and all four rotations of the seat assignment",
+  "sweep": [
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 0,
+      "crownScouts": 1,
+      "margin": 0.020833333333333315
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 0,
+      "crownScouts": 2,
+      "margin": 0.06249999999999983
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 0,
+      "crownScouts": 3,
+      "margin": 0.10416666666666646
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 10,
+      "crownScouts": 1,
+      "margin": -0.10416666666666674
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 10,
+      "crownScouts": 2,
+      "margin": 0.02083333333333326
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 10,
+      "crownScouts": 3,
+      "margin": 0.0625
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 20,
+      "crownScouts": 1,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 20,
+      "crownScouts": 2,
+      "margin": 0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 20,
+      "crownScouts": 3,
+      "margin": 0.020833333333333426
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 40,
+      "crownScouts": 1,
+      "margin": -0.06250000000000022
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 40,
+      "crownScouts": 2,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 3,
+      "crownReserve": 40,
+      "crownScouts": 3,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 0,
+      "crownScouts": 1,
+      "margin": 0.02083333333333326
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 0,
+      "crownScouts": 2,
+      "margin": 0.06249999999999983
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 0,
+      "crownScouts": 3,
+      "margin": 0.0833333333333332
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 10,
+      "crownScouts": 1,
+      "margin": -0.08333333333333343
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 10,
+      "crownScouts": 2,
+      "margin": 0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 10,
+      "crownScouts": 3,
+      "margin": 0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 20,
+      "crownScouts": 1,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 20,
+      "crownScouts": 2,
+      "margin": 0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 20,
+      "crownScouts": 3,
+      "margin": -0.020833333333333426
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 40,
+      "crownScouts": 1,
+      "margin": -0.06250000000000022
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 40,
+      "crownScouts": 2,
+      "margin": -0.06250000000000022
+    },
+    {
+      "sprawlLandDivisor": 4,
+      "crownReserve": 40,
+      "crownScouts": 3,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 0,
+      "crownScouts": 1,
+      "margin": 0.02083333333333326
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 0,
+      "crownScouts": 2,
+      "margin": 0.020833333333333093
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 0,
+      "crownScouts": 3,
+      "margin": 0.06249999999999972
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 10,
+      "crownScouts": 1,
+      "margin": -0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 10,
+      "crownScouts": 2,
+      "margin": -0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 10,
+      "crownScouts": 3,
+      "margin": 0.010416666666666685
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 20,
+      "crownScouts": 1,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 20,
+      "crownScouts": 2,
+      "margin": 0.0
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 20,
+      "crownScouts": 3,
+      "margin": -0.08333333333333326
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 40,
+      "crownScouts": 1,
+      "margin": -0.04166666666666674
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 40,
+      "crownScouts": 2,
+      "margin": -0.08333333333333337
+    },
+    {
+      "sprawlLandDivisor": 5,
+      "crownReserve": 40,
+      "crownScouts": 3,
+      "margin": -0.06250000000000022
+    }
+  ]
+}
