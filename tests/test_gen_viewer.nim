@@ -194,6 +194,48 @@ suite "chrome provenance":
     check "CtfStaticReplay" notin page
     check "CtfStaticReplay" notin repo("client/league_replayer.html")
 
+suite "the worst-case renderer fixture":
+  ## Acceptance checklist 15, last bullet. `docker_smoke.sh` runs with no
+  ## ANTHROPIC_API_KEY, so every seat in the CI replay is scripted and emits
+  ## no note: the fixture is the ONLY gate that makes the shipped page draw
+  ## LLM-authored text, and it has to drive the page's own path and assert its
+  ## own strings are still whole.
+  let fixture = repo("tools/ci/renderer_fixture.html")
+  let workflow = repo(".github/workflows/ci.yml")
+
+  test "it hands the page a full-cap remark on every seat as a plan EVENT":
+    ## `state.plan[]` is never read by the page: `gen_block.html` draws a
+    ## remark from `case 'plan':` inside `event()`, which the page drives from
+    ## `s.events`.
+    check "k: 'plan'" in fixture
+    check "for (var s = 0; s < 4; s++)" in fixture
+    check "note: NOTE" in fixture
+    check "NOTE.length < " & $MaxNoteRunes in fixture
+    check "NOTE.slice(0, " & $MaxNoteRunes & ")" in fixture
+
+  test "it asserts the drawn remarks are still full-length":
+    ## Row counting alone would leave a quietly shortened remark green.
+    check "text.indexOf(NOTE) < 0" in fixture
+    check "was SHORTENED at" in fixture
+    check "full-cap commander " in fixture
+    check "data-replay-error" in fixture
+
+  test "it is driven by viewer_smoke with --strict-text-bounds":
+    let step = workflow[workflow.find("worst-case renderer fixture") .. ^1]
+    check "renderer_fixture.html" in step
+    check "--strict-text-bounds" in step
+    check "continue-on-error" notin step
+
+  test "the commander line has a wrapping band sized from the note cap":
+    ## A 160-rune sentence in the starter's one-line `white-space: nowrap`
+    ## feed row would grow leftward across the board; ellipsizing it would be
+    ## the defect the checklist names. It wraps inside the feed instead.
+    let gameBlock = page[page.find("GEN-GENERALS-IO additions") .. ^1]
+    check ".feed-row.plan {" in gameBlock
+    check "white-space: normal;" in gameBlock
+    check "overflow-wrap: anywhere;" in gameBlock
+    check "'plan');" in gameBlock
+
 suite "the wasm harness":
   test "the EXACT emitted module loads the replay and never diverges":
     ## The `test` job has no bundle, so this returns early there; the

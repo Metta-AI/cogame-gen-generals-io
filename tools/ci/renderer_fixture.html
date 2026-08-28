@@ -12,13 +12,23 @@
   2026-08-24 scar). This fixture drives the SHIPPED page instead of
   re-implementing it (the particle-worlds 2026-08-26 scar): it loads the
   bundle's own page in an iframe and shims ONLY the wasm entry, then feeds it
-  frames with a full-cap 160-rune note on all four seats, a board where every
-  cell holds a three-digit army, a crown-capture banner, an eliminated plate
-  and the fog lens on each of the four seats in turn, at 360 / 620 / 1280 px.
+  frames on CONSECUTIVE ticks (the page drops the events of a frame it reads
+  as a seek) — a board where every cell holds a three-digit army, a
+  crown-capture banner, an eliminated plate, the fog lens on each of the four
+  seats in turn, the endcard, and finally a `plan` EVENT per seat carrying a
+  full-cap 160-rune note, all four at once, at 1280 / 620 / 360 px.
 
-  It finishes by transcribing every DOM text run the page drew to a canvas at
-  its MEASURED geometry, so `viewer_smoke.mjs --strict-text-bounds` sees the
-  chrome's strings and fails on any that has nowhere to go.
+  Three things are then asserted at every size, after the entrance animation
+  has settled:
+    * all four remarks are present and STILL FULL-LENGTH — the page's own
+      `#killfeed` rows are compared against the source string, so a quietly
+      shortened remark is red rather than green;
+    * no remark left the band the feed reserves for it, and no row clips its
+      own content;
+    * every DOM text run the page drew is transcribed to a canvas at its
+      MEASURED geometry, line box by line box, so
+      `viewer_smoke.mjs --strict-text-bounds` sees the chrome's strings and
+      fails on any that has nowhere to go.
 -->
 <style>
   html, body { margin: 0; background: #12100e; color: #f2e8d8;
@@ -109,30 +119,65 @@
     return state;
   }
 
+  function planEvents() {
+    // The path that actually DRAWS a remark in the shipped page is
+    // `gen_block.html`'s `case 'plan':` inside `event(e, s, ctx)`, driven from
+    // `s.events` by the page's own applyEvent. A note parked in `state.plan[]`
+    // is never read by the page, so the fixture hands the full-cap note to the
+    // page the way the sim does: as a `plan` EVENT, on all four seats in one
+    // frame -- the worst case for the feed's reserved band.
+    var out = [];
+    for (var s = 0; s < 4; s++) {
+      out.push({ k: 'plan', seat: s, intent: 'raid', note: NOTE });
+    }
+    return out;
+  }
+
+  // CONSECUTIVE ticks. The shipped page treats a frame that steps more than a
+  // few ticks as a seek (`jumped` in replay_broadcast.html) and drops that
+  // frame's events on the floor, so a fixture whose frames stepped 8 turns at
+  // a time drove the chrome but never once entered its event path -- no feed
+  // row, no banner, no beat.
   var FRAMES = [
     frame(0, { series: true }),
-    frame(8, { events: [{ k: 'citytaken', seat: 0, cell: 34, from: -1, cost: 40, cities: 1 }] }),
-    frame(16, { events: [{ k: 'generalspotted', seat: 3, victim: 1, cell: 28 }] }),
-    frame(24, { events: [{ k: 'generalcaptured', seat: 1, victim: 2, cell: 129,
-                           landGained: 24, armyGained: 118 },
-                         { k: 'eliminated', seat: 2, turn: 71, by: 1 }], dead: true }),
-    frame(32, { events: [{ k: 'growth', turn: 32, land: [44, 41, 0, 37],
-                           army: [999, 888, 0, 666] }], dead: true }),
-    frame(40, { events: [{ k: 'stackclash', cell: 55, attacker: 0, defender: 3,
-                           attackerArmy: 543, defenderArmy: 612, held: true }], dead: true }),
-    frame(240, { dead: true, over: true })
+    frame(1, { events: [{ k: 'citytaken', seat: 0, cell: 34, from: -1, cost: 40, cities: 1 }] }),
+    frame(2, { events: [{ k: 'generalspotted', seat: 3, victim: 1, cell: 28 }] }),
+    frame(3, { events: [{ k: 'generalcaptured', seat: 1, victim: 2, cell: 129,
+                          landGained: 24, armyGained: 118 },
+                        { k: 'eliminated', seat: 2, turn: 71, by: 1 }], dead: true }),
+    frame(4, { events: [{ k: 'growth', turn: 32, land: [44, 41, 0, 37],
+                          army: [999, 888, 0, 666] }], dead: true }),
+    frame(5, { events: [{ k: 'stackclash', cell: 55, attacker: 0, defender: 3,
+                          attackerArmy: 543, defenderArmy: 612, held: true }], dead: true }),
+    frame(6, { dead: true, over: true })
   ];
 
-  function shim(html) {
+  // Delivered after the endcard has been transcribed, one tick later so the
+  // page reads it as playback rather than a seek: the page takes the endcard
+  // down on any non-gameover frame (the starter's rule), leaving the board and
+  // four full-cap commander lines in the feed at once.
+  var PLAN_FRAME = frame(7, { dead: true, events: planEvents() });
+
+  function shim(html, frames) {
     // Replace ONLY the wasm entry. Everything else -- the CSS, the markup,
     // chrome_common.js, broadcast_core.js and the appended game block -- is
     // the shipped page, executed as shipped.
+    //
+    // The frames are EMBEDDED in the shim and the shim publishes `__feed` on
+    // the iframe's own window. Reaching back through `window.parent` does not
+    // work under the harness: `viewer_smoke.mjs` shadows `window.parent` with
+    // a postMessage stub in every frame, so `window.parent.__FRAMES` was
+    // undefined, the pump threw on its first tick and the fixture measured a
+    // page that had never been handed a single frame.
     var stub =
-      '<script>window.GenStaticReplay={createCore:function(config){' +
-      'var i=0;return{start:function(){config.onStatus("open");' +
+      '<script>window.__QUEUE=' + JSON.stringify(frames) + ';' +
+      'window.GenStaticReplay={createCore:function(config){' +
+      'var q=window.__QUEUE,i=0;' +
+      'window.__feed=function(f){config.onText(JSON.stringify(f));};' +
+      'return{start:function(){config.onStatus("open");' +
       'if(config.onFirstFrame)config.onFirstFrame();' +
-      'var pump=function(){if(i>=window.parent.__FRAMES.length)return;' +
-      'config.onText(JSON.stringify(window.parent.__FRAMES[i++]));setTimeout(pump,60);};pump();},' +
+      'var pump=function(){if(i<q.length){config.onText(JSON.stringify(q[i++]));' +
+      'setTimeout(pump,60);}};pump();},' +
       'stop:function(){},sendCommand:function(){},clickMap:function(){},' +
       'attachMinimap:function(){},setViewportSize:function(){},setViewportFit:function(){},' +
       'getPaceStats:function(){return{draws:0};},' +
@@ -145,19 +190,51 @@
       .replace('<head>', '<head><base href="./">');
   }
 
+  function lineRuns(doc, el) {
+    // The browser's OWN line boxes, found by walking each text node one
+    // character at a time and cutting wherever the rect steps down a line. A
+    // wrapped commander line is then transcribed as the three lines the page
+    // actually laid out, instead of one impossible 160-rune run that would
+    // report a false overflow -- and a line the page pushed off the frame
+    // still lands off the canvas, which is the signal --strict-text-bounds
+    // exists to catch.
+    var runs = [];
+    var walker = doc.createTreeWalker(el, 4 /* NodeFilter.SHOW_TEXT */, null);
+    var range = doc.createRange();
+    var node;
+    while ((node = walker.nextNode())) {
+      var text = node.nodeValue || '';
+      if (!text.trim()) continue;
+      var start = 0, top = null, left = 0, bottom = 0;
+      for (var i = 0; i < text.length; i++) {
+        range.setStart(node, i);
+        range.setEnd(node, i + 1);
+        var r = range.getBoundingClientRect();
+        if (!r.width && !r.height) continue;
+        if (top === null) { top = r.top; left = r.left; bottom = r.bottom; }
+        else if (Math.abs(r.top - top) > 1) {
+          runs.push({ text: text.slice(start, i), left: left, bottom: bottom });
+          start = i; top = r.top; left = r.left; bottom = r.bottom;
+        } else if (r.bottom > bottom) { bottom = r.bottom; }
+      }
+      if (top !== null) runs.push({ text: text.slice(start), left: left, bottom: bottom });
+    }
+    return runs;
+  }
+
   function transcribe(doc) {
     // Every DOM text run the page drew, painted onto a canvas at its MEASURED
-    // rect, so viewer_smoke's canvas-text instrumentation can judge it.
+    // geometry, so viewer_smoke's canvas-text instrumentation can judge it.
     var canvas = document.getElementById('probe');
     var ctx = canvas.getContext('2d');
     var nodes = doc.querySelectorAll(
       '#clock-time, #clock-caption, #tick-clock, #growthread, #stacktop, ' +
       '.plate-name, .land-num, .plate-sub, .feed-row, .banner-chip, ' +
       '#ec-headline, #ec-wincond, #ec-how, .ec-row, .fogchip');
+    var drawn = 0;
     for (var i = 0; i < nodes.length; i++) {
       var el = nodes[i];
-      var text = (el.textContent || '').trim();
-      if (!text) continue;
+      if (!(el.textContent || '').trim()) continue;
       var rect = el.getBoundingClientRect();
       var style = doc.defaultView.getComputedStyle(el);
       // Only what the page is actually SHOWING: a hidden endcard sits off the
@@ -169,40 +246,175 @@
       if (rect.bottom <= 0 || rect.right <= 0) continue;
       ctx.font = style.fontSize + ' ' + (style.fontFamily || 'monospace');
       ctx.fillStyle = 'rgba(242,232,216,0.02)';
-      ctx.fillText(text, rect.left, rect.top + rect.height);
+      var upper = style.textTransform === 'uppercase';
+      var runs = lineRuns(doc, el);
+      for (var j = 0; j < runs.length; j++) {
+        var run = runs[j].text.replace(/\s+$/, '');
+        if (!run.trim()) continue;
+        ctx.fillText(upper ? run.toUpperCase() : run, runs[j].left, runs[j].bottom);
+        drawn++;
+      }
     }
-    return nodes.length;
+    return drawn;
   }
 
-  window.__FRAMES = FRAMES;
+  function commanderLines(doc) {
+    // The remark rows the page drew, and for each one: is the WHOLE 160-rune
+    // note still there, did it stay inside the band the feed reserves for it,
+    // and did the row clip its own content? One quietly shortened remark --
+    // an ellipsis, a slice(0, 80), a badge that dropped the tail -- leaves a
+    // fixture that only counts rows passing while testing nothing.
+    var feed = doc.getElementById('killfeed');
+    var band = feed ? feed.getBoundingClientRect() : null;
+    var view = doc.documentElement.clientHeight;
+    var rows = doc.querySelectorAll('#killfeed .feed-row');
+    var out = { full: 0, shortened: 0, escaped: 0, clipped: 0, sample: '' };
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var text = row.textContent || '';
+      if (text.indexOf(NOTE.slice(0, 24)) < 0) continue;
+      if (text.indexOf(NOTE) < 0) {
+        out.shortened++;
+        out.sample = text.slice(0, 90);
+        continue;
+      }
+      out.full++;
+      var box = row.getBoundingClientRect();
+      if (band && (box.left < band.left - 1 || box.right > band.right + 1 ||
+          box.top < 0 || box.bottom > view + 1)) {
+        out.escaped++;
+        out.sample = 'row [' + Math.round(box.left) + ',' + Math.round(box.top) +
+          ',' + Math.round(box.right) + ',' + Math.round(box.bottom) +
+          '] outside the feed band [' + Math.round(band.left) + ',' +
+          Math.round(band.right) + '] / viewport height ' + view;
+      } else if (row.scrollWidth > row.clientWidth + 1) {
+        out.clipped++;
+        out.sample = 'row clips its own content: scrollWidth ' + row.scrollWidth +
+          ' > clientWidth ' + row.clientWidth;
+      }
+    }
+    return out;
+  }
+
   var sizes = [[1280, 720], [620, 400], [360, 203]];
   var frameEl = document.getElementById('frame');
   var pageHtml = null;
+  var totalDrawn = 0;
+
+  function fail(message) {
+    say('fixture failed: ' + message);
+    document.documentElement.setAttribute('data-replay-error', message);
+  }
 
   function runSize(index, done) {
     if (index >= sizes.length) { done(); return; }
     var size = sizes[index];
     frameEl.width = size[0];
     frameEl.height = size[1];
-    frameEl.srcdoc = shim(pageHtml);
+    frameEl.srcdoc = shim(pageHtml, FRAMES);
     say('driving the shipped page at ' + size[0] + 'x' + size[1]);
-    setTimeout(function () {
-      var doc = frameEl.contentDocument;
-      var drawn = 0;
-      try {
-        // The fog lens on each seat in turn, exercised through the page's own
-        // chips rather than a private hook.
-        var chips = doc.querySelectorAll('#genband .fogchip');
-        for (var c = 0; c < chips.length; c++) chips[c].click();
-        drawn = transcribe(doc);
-      } catch (error) {
-        say('fixture failed: ' + error.message);
-        document.documentElement.setAttribute('data-replay-error', String(error.message));
+    waitForPage(index, size, 0, done);
+  }
+
+  function waitForPage(index, size, waited, done) {
+    // Ready = the shim is installed AND the page has ingested the last base
+    // frame, which raises the endcard. Polled rather than timed: a slow runner
+    // must not be measured mid-boot.
+    var win = frameEl.contentWindow;
+    var doc = frameEl.contentDocument;
+    var ready = false;
+    try {
+      var endcard = doc && doc.getElementById('endcard');
+      ready = !!(win && win.__feed && endcard &&
+        endcard.classList.contains('on'));
+    } catch (error) { ready = false; }
+    if (!ready) {
+      if (waited >= 20000) {
+        fail('the shipped page never reached the endcard at ' + size[0] + 'x' +
+          size[1] + ' after 20s of frames');
         return;
       }
-      say('drew ' + drawn + ' text runs at ' + size[0] + 'x' + size[1]);
-      runSize(index + 1, done);
-    }, 2200);
+      setTimeout(function () {
+        waitForPage(index, size, waited + 100, done);
+      }, 100);
+      return;
+    }
+    try {
+      // The fog lens on each seat in turn, exercised through the page's own
+      // chips rather than a private hook.
+      var chips = doc.querySelectorAll('#genband .fogchip');
+      for (var c = 0; c < chips.length; c++) chips[c].click();
+      totalDrawn += transcribe(doc);
+      // Now the worst case for the feed: a full-cap remark on EVERY seat at
+      // once, handed to the page as the `plan` events the sim emits.
+      win.__feed(PLAN_FRAME);
+    } catch (error) {
+      fail('driving the page at ' + size[0] + 'x' + size[1] + ': ' + error.message);
+      return;
+    }
+    waitForRemarks(index, size, 0, done);
+  }
+
+  function waitForRemarks(index, size, waited, done) {
+    var doc = frameEl.contentDocument;
+    var lines;
+    try {
+      lines = commanderLines(doc);
+    } catch (error) {
+      fail('reading the feed at ' + size[0] + 'x' + size[1] + ': ' + error.message);
+      return;
+    }
+    if (lines.shortened > 0) {
+      fail('a commander remark was SHORTENED at ' + size[0] + 'x' + size[1] +
+        ' (' + lines.shortened + ' of ' + (lines.full + lines.shortened) +
+        ' rows): ' + lines.sample);
+      return;
+    }
+    if (lines.full < 4) {
+      if (waited >= 6000) {
+        fail('the shipped page drew ' + lines.full + '/4 full-cap commander ' +
+          'remarks at ' + size[0] + 'x' + size[1] + ' from its own plan events');
+        return;
+      }
+      setTimeout(function () {
+        waitForRemarks(index, size, waited + 100, done);
+      }, 100);
+      return;
+    }
+    // The rows are up; let the entrance animation play through to settle
+    // before anything is measured, so a translateX mid-slide is not read as a
+    // remark that escaped its band.
+    setTimeout(function () { settled(index, size, done); }, 700);
+  }
+
+  function settled(index, size, done) {
+    var doc = frameEl.contentDocument;
+    try {
+      var lines = commanderLines(doc);
+      if (lines.shortened > 0) {
+        fail('a commander remark was SHORTENED at ' + size[0] + 'x' + size[1] +
+          ': ' + lines.sample);
+        return;
+      }
+      if (lines.full < 4) {
+        fail('only ' + lines.full + '/4 commander remarks survived the ' +
+          'entrance animation at ' + size[0] + 'x' + size[1]);
+        return;
+      }
+      if (lines.escaped > 0 || lines.clipped > 0) {
+        fail('a commander remark left its reserved band at ' + size[0] + 'x' +
+          size[1] + ': ' + lines.sample);
+        return;
+      }
+      totalDrawn += transcribe(doc);
+    } catch (error) {
+      fail('transcribing the remarks at ' + size[0] + 'x' + size[1] + ': ' +
+        error.message);
+      return;
+    }
+    say('drew ' + totalDrawn + ' text runs, 4 full-cap remarks at ' +
+      size[0] + 'x' + size[1]);
+    runSize(index + 1, done);
   }
 
   fetch('./page.html').then(function (r) { return r.text(); }).then(function (html) {

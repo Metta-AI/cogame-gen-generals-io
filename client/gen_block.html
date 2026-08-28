@@ -112,6 +112,28 @@
   pointer-events: none;
 }
 
+/* ---- the commander line: the LLM's own words, in the feed -------------- */
+/* A remark is a SENTENCE, not a label. The server caps a plan note at
+   MaxNoteRunes = 160 runes, so the feed reserves a band measured from that
+   cap -- reserved whether or not anyone is speaking, so the scene does not
+   jump when a remark lands -- and the row WRAPS inside the feed's own width
+   instead of growing leftward across the board on `white-space: nowrap`.
+   Never ellipsized: shortening the sentence is the defect, not the fix. */
+#killfeed { min-height: calc(4 * 34 * var(--u)); }
+.feed-row.plan {
+  width: 100%;
+  align-items: flex-start;
+  white-space: normal;
+}
+.feed-row.plan .badge {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+
 /* ---- the four beat kinds this game emits, and no others -------------- */
 .beat-marker.citytaken { background: var(--tc, var(--paper-dim)); height: calc(6 * var(--u)); }
 .beat-marker.generalspotted { background: var(--tc, var(--paper)); height: calc(8 * var(--u)); opacity: 0.7; }
@@ -393,8 +415,11 @@
         return true;
       case 'plan':
         if (e.note) {
+          // `plan` rows carry a full sentence (<=160 runes), so they take the
+          // wrapping band the CSS above reserves rather than the one-line
+          // badge the other feed rows use.
           feedRow('<span class="who ' + genTeam(e.seat) + '">' + esc(ALIASES[e.seat]) +
-            '</span><span class="badge">&ldquo;' + esc(e.note) + '&rdquo;</span>');
+            '</span><span class="badge">&ldquo;' + esc(e.note) + '&rdquo;</span>', 'plan');
         }
         return true;
       case 'end':
