@@ -6,8 +6,9 @@
 ##   window.GEN_WIRE={...};
 ##   window.CTF_WIRE=window.GEN_WIRE;
 ## The game's own code reads `GEN_WIRE`. The alias exists SOLELY so
-## `client/chrome_common.js` — which this repo pins byte-for-byte against
-## coworld-ctf and whose line 72 reads `window.CTF_WIRE` — needs no edit.
+## `client/chrome_common.js` — which this repo pins by sha256 against
+## coworld-ctf (plus the fleet-wide 0.5x transport patch) and whose line 72
+## reads `window.CTF_WIRE` — needs no wire-name edit.
 ## `Dockerfile.replay-viewer` asserts both lines.
 
 import std/[json, strutils]
@@ -15,6 +16,9 @@ import sim_types, rig_art
 
 proc wireConstants*(): JsonNode =
   var speeds = newJArray()
+  # 0.5 is the replay-only half speed (ReplayHalfSpeed, command '5');
+  # it rides ahead of the engine's integer PlaybackSpeeds.
+  speeds.add(%0.5)
   for speed in PlaybackSpeeds:
     speeds.add(%speed)
   %*{

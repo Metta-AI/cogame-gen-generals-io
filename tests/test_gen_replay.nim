@@ -265,6 +265,43 @@ suite "playback opens at the game start":
     check session.player.hashMismatchTick == -1
     check session.sim.turn == sim.turn
 
+suite "half speed is a replay-only crawl":
+  ## The fleet-wide 1/2x replay speed: command '5' selects the
+  ## ReplayHalfSpeed sentinel, the chrome shows 0.5, and advance() spends
+  ## one tick every OTHER frame (halfPhase parity) outside lulls.
+  test "'5' selects 1/2x and advance spends one tick every other frame":
+    let (bytes, _) = recordEpisode(1734029581,
+      [skSprawl, skCrown, skSprawl, skCrown])
+    var session = initReplaySession(parseReplayBytes(bytes))
+    session.applyCommand("5")
+    check session.speed == ReplayHalfSpeed
+    check session.displaySpeed() == 0.5
+    session.playing = true
+    session.skipLulls = false
+    session.halfPhase = false
+    let opened = session.cursor
+    session.advance()
+    check session.cursor == opened + 1  ## the odd frame spends one tick
+    session.advance()
+    check session.cursor == opened + 1  ## the even frame spends none
+    for frame in 0 ..< 10:
+      session.advance()
+    check session.cursor == opened + 6  ## 10 more frames advance 5 ticks
+
+  test "'-' floors at 1/2x and '+' climbs back out":
+    let (bytes, _) = recordEpisode(1734029581,
+      [skSprawl, skCrown, skSprawl, skCrown])
+    var session = initReplaySession(parseReplayBytes(bytes))
+    check session.speed == 1
+    session.applyCommand("-")
+    check session.speed == ReplayHalfSpeed  ## '-' from 1x lands on 1/2x
+    session.applyCommand("-")
+    check session.speed == ReplayHalfSpeed  ## 1/2x is the floor
+    session.applyCommand("+")
+    check session.speed == 1  ## '+' from 1/2x lands on 1x
+    session.applyCommand("2")
+    check session.speed == 2 and session.displaySpeed() == 2.0
+
 suite "strict UTF-8 forensics":
   test "replay_summary.py parses a replay whose caps are full of emoji":
     let (bytes, _) = recordEpisode(42, [skSprawl, skCrown, skSprawl, skCrown],

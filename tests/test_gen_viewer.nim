@@ -18,19 +18,25 @@ let core = repo("client/broadcast_core.js")
 let chrome = repo("client/chrome_common.js")
 
 suite "chrome provenance":
-  test "chrome_common.js is byte-identical to coworld-ctf's":
-    ## The pin: not edited, not reformatted, not one identifier changed.
-    ## Everything gen-generals-io adds lives in the appended game block.
-    ## sha256, pinned as a literal, computed with the platform's own tool so
-    ## the pin needs no dependency the Dockerfile does not already have.
+  test "chrome_common.js is coworld-ctf's plus the fleet-wide 0.5x patch":
+    ## The pin: coworld-ctf's chrome_common.js plus the fleet-wide replay
+    ## transport patch (the 0.5x speed chip mapped to command '5', and 0.5
+    ## in the raw file:// SPEEDS fallback). Everything else gen-generals-io
+    ## adds lives in the appended game block; the file is otherwise NOT
+    ## edited and NOT reformatted. sha256, pinned as a literal, computed
+    ## with the platform's own tool so the pin needs no dependency the
+    ## Dockerfile does not already have.
     let (digest, code) = execCmdEx(
       "sha256sum " & quoteShell(pathOf("client/chrome_common.js")))
     check code == 0
     check digest.split(' ')[0] ==
-      "7ace7287e0d19bf0fddb2362c55e4d76dfb44adcd4fbc8d1743b0557ced72f7c"
-    check chrome.len == 40022
+      "594ed4a72cd908922c982d0f3e3ffb04ae1d97568fcd5f5daa794042662a369c"
+    check chrome.len == 40037
     check "window.ChromeCommon" in chrome
     check "window.CTF_WIRE" in chrome
+    ## The fleet-wide 0.5x transport patch, and nothing else.
+    check "0.5: '5'" in chrome
+    check "[0.5, 1, 2, 3, 4, 8, 16]" in chrome
 
   test "broadcast_core.js is the starter's, with ONE documented line changed":
     ## coworld-ctf's core is a generic sprite/layer renderer with no game
