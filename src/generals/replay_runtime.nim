@@ -164,6 +164,10 @@ proc checkReplayHash*(sim: Sim, player: ReplayPlayer): bool =
 
 # ---- the playback session ----------------------------------------------
 
+const ReplayHalfSpeed* = 0
+  ## `speed` sentinel for the replay-only 1/2x playback (command '5'):
+  ## one tick is spent every other presentation frame (halfPhase parity).
+
 type
   ReplaySession* = object
     ## Everything a viewer needs to play the file: the sim, the recorded
@@ -176,6 +180,10 @@ type
     endTick*: int
     playing*: bool
     speed*: int
+      ## Integer playback multiplier, or ReplayHalfSpeed (0) for 1/2x.
+    halfPhase*: bool
+      ## Frame parity while at 1/2x speed: ticks advance only on the odd
+      ## frames, toggled once per advance() frame.
     loop*: bool
     skipLulls*: bool
     fastForward*: bool
@@ -203,6 +211,12 @@ proc initReplaySession*(data: ReplayData): ReplaySession =
 
 proc turnAt(session: ReplaySession, cursor: int): int =
   clamp(cursor - session.startTick, 0, session.player.endTurn)
+
+proc displaySpeed*(session: ReplaySession): float =
+  ## The speed the chrome shows: 0.5 at the half-speed sentinel, else the
+  ## integer multiplier.
+  if session.speed == ReplayHalfSpeed: 0.5
+  else: float(session.speed)
 
 proc seekTo*(session: var ReplaySession, tick: int) =
   ## Backwards is a re-simulation from turn 0: 240 turns of integer work on
@@ -232,7 +246,7 @@ proc seekTo*(session: var ReplaySession, tick: int) =
     session.sim.phase = phPlaying
 
 proc applyCommand*(session: var ReplaySession, command: string) =
-  ## The starter's transport vocabulary, unchanged.
+  ## The starter's transport vocabulary, plus the fleet-wide '5' half speed.
   if command.len == 0:
     return
   case command[0]
@@ -243,8 +257,11 @@ proc applyCommand*(session: var ReplaySession, command: string) =
   of 'e': session.seekTo(session.endTick)
   of 'r': session.loop = not session.loop
   of 'f': session.skipLulls = not session.skipLulls
-  of '+': session.speed = min(8, session.speed * 2)
-  of '-': session.speed = max(1, session.speed div 2)
+  of '+': session.speed = clamp(session.speed * 2, 1, 8)
+  of '-':
+    # 1 div 2 == ReplayHalfSpeed: '-' from 1x lands on 1/2x, the floor.
+    session.speed = session.speed div 2
+  of '5': session.speed = ReplayHalfSpeed
   of '1': session.speed = 1
   of '2': session.speed = 2
   of '4': session.speed = 4
@@ -260,6 +277,7 @@ proc inLull(session: ReplaySession, turn: int): bool =
 
 proc advance*(session: var ReplaySession) =
   ## One presentation frame.
+  session.halfPhase = not session.halfPhase
   session.fastForward = false
   if not session.playing:
     return
@@ -267,6 +285,10 @@ proc advance*(session: var ReplaySession) =
   if session.skipLulls and session.inLull(session.turnAt(session.cursor)):
     steps = steps * 8
     session.fastForward = true
+  elif session.speed == ReplayHalfSpeed:
+    # 1/2x: spend one tick only every other frame (never inside the
+    # lull boost above, which keeps its full 1x catch-up pace).
+    steps = (if session.halfPhase: 1 else: 0)
   for i in 0 ..< steps:
     if session.cursor >= session.endTick:
       if session.loop:

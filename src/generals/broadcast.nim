@@ -6,7 +6,8 @@
 ## `lead` series keep their structure; the fields are this game's.
 ##
 ## The INHERITED keys are unchanged, because `client/chrome_common.js` is
-## byte-for-byte the starter's and reads them: `t`, `mt`, `ph`, `lob`, `sp`,
+## the starter's (plus the fleet-wide 0.5x patch) and reads them: `t`, `mt`,
+## `ph`, `lob`, `sp`,
 ## `mx`, `st`, `lp`, `sk`, `ff`, `en`, `mm`, `teams`, `roster`, `events`,
 ## `lead`, `lulls`, `beats`, `over`, `pov`, `pl`.
 
@@ -19,7 +20,9 @@ type
     startTick*: int
     maxTick*: int
     playing*: bool
-    speed*: int
+    speed*: float
+      ## What the chrome shows: 0.5 while at the replay-only half speed,
+      ## else the integer multiplier.
     loop*: bool
     skipLulls*: bool
     fastForward*: bool

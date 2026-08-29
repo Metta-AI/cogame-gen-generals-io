@@ -74,7 +74,7 @@ proc frameContext(sim: Sim): FrameContext =
     startTick: sim.config.startWaitTicks,
     maxTick: sim.config.startWaitTicks + sim.config.maxTurns +
       sim.config.gameOverTicks,
-    playing: true, speed: 1, transportEnabled: false, mismatchTick: -1,
+    playing: true, speed: 1.0, transportEnabled: false, mismatchTick: -1,
     lobbyCountdown: 0, sendSeries: false)
 
 proc refreshSnapshotLocked() =

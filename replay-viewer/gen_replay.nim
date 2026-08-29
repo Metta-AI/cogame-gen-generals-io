@@ -60,7 +60,7 @@ proc frameContextOf(): FrameContext =
     startTick: session.startTick,
     maxTick: session.endTick,
     playing: session.playing,
-    speed: session.speed,
+    speed: session.displaySpeed(),
     loop: session.loop,
     skipLulls: session.skipLulls,
     fastForward: session.fastForward,

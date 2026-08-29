@@ -32,10 +32,11 @@ re-derive a different board.
 
 ## The chrome is inherited, not written
 
-* `client/chrome_common.js` is **byte-for-byte** coworld-ctf's, pinned by
-  sha256 in `tests/test_gen_viewer.nim`. Never edit it. Its line 72 reads
-  `window.CTF_WIRE`, which is why `tools/gen_wire_constants.nim` emits
-  `window.GEN_WIRE={…}` and then one alias line.
+* `client/chrome_common.js` is coworld-ctf's plus the fleet-wide replay
+  transport patch (the 0.5x speed chip and its SPEEDS fallback), pinned by
+  sha256 in `tests/test_gen_viewer.nim`. Never edit it otherwise. Its line
+  72 reads `window.CTF_WIRE`, which is why `tools/gen_wire_constants.nim`
+  emits `window.GEN_WIRE={…}` and then one alias line.
 * `client/broadcast_core.js` is the starter's generic sprite/layer renderer
   with exactly one line changed (the wire constants it reads).
 * `client/replay_broadcast.html` is DERIVED:
