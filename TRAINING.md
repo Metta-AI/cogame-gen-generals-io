@@ -31,5 +31,36 @@ uv run --package metta-posttrain --extra train python -m metta_posttrain.train \
 ```
 
 The exporter preserves the native fog boundary: prompts contain only the
-acting seat's visible and remembered cells. Numeric Metta RL and PufferLib
-training need a bounded codec for this game's plan choices.
+acting seat's visible and remembered cells.
+
+## Numeric reinforcement learning
+
+`tools/train_bridge.nim` exposes 834 values from the acting seat's fogged
+view, public standings, and previous plan. Seven action heads choose intent,
+optional target coordinates, reserve, city policy, and scouting rate. Four
+living seats choose against the same pre-turn state, then the production
+simulator executes the plans until the next directive turn.
+
+```sh
+nim c -d:release --path:src -o:/tmp/gen-generals-train-bridge tools/train_bridge.nim
+python3 tools/test_train_bridge.py /tmp/gen-generals-train-bridge
+```
+
+From a Metta checkout with the Coworld training stack, pass absolute bridge
+and manifest paths to `recipes.external.coworld.train` for native PufferLib,
+or `recipes.external.coworld_metta_rl.train` for Metta RL. Use `players=4`,
+`max_decisions=160`, a timestep limit, and one of the three variant IDs.
+The bridge also publishes the hosted observation as `semantic_view` and
+`messages`.
+
+Local smoke runs completed for every certified variant. Metta RL trained for
+512 steps per variant. Native PufferLib trained for 4,096 steps per variant on
+CUDA, then reloaded each checkpoint for held-out seeds 101 and 102.
+
+| Variant | Metta RL | PufferLib held-out score, seeds 101 / 102 |
+| --- | ---: | ---: |
+| `ffa` | 512 steps | 0.333 / 0.267 |
+| `blitz` | 512 steps | 0.467 / 0.267 |
+| `citadels` | 512 steps | 0.417 / 0.167 |
+
+These short runs verify training and checkpoint reload, not policy quality.
