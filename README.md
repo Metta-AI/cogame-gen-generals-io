@@ -54,6 +54,8 @@ occupied cell, and a **fog lens** chip row lets a spectator watch the board as
 any one commander saw it — a raid arriving out of the dark exactly as the
 victim experienced it.
 
+See [TRAINING.md](TRAINING.md) for native post-training exports.
+
 ## Layout
 
 ```

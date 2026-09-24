@@ -149,6 +149,11 @@ jobs:
           done
           exit "${fail}"
 
+      - name: Export complete training episodes
+        run: |
+          nim c -d:release --path:src -o:/tmp/gen-generals-posttrain tools/export_posttrain.nim
+          python3 tools/test_posttrain.py /tmp/gen-generals-posttrain
+
       # The baseline tuning sweep is a claim about how the game PLAYS, so it
       # is re-checked rather than trusted: --check fails if the shipped
       # defaults are no longer tools/ci/baseline_tuning.json's pick, or if
