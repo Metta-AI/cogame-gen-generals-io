@@ -52,3 +52,15 @@ or `recipes.external.coworld_metta_rl.train` for Metta RL. Use `players=4`,
 `max_decisions=160`, a timestep limit, and one of the three variant IDs.
 The bridge also publishes the hosted observation as `semantic_view` and
 `messages`.
+
+Local smoke runs completed for every certified variant. Metta RL trained for
+512 steps per variant. Native PufferLib trained for 4,096 steps per variant on
+CUDA, then reloaded each checkpoint for held-out seeds 101 and 102.
+
+| Variant | Metta RL | PufferLib held-out score, seeds 101 / 102 |
+| --- | ---: | ---: |
+| `ffa` | 512 steps | 0.333 / 0.267 |
+| `blitz` | 512 steps | 0.467 / 0.267 |
+| `citadels` | 512 steps | 0.417 / 0.167 |
+
+These short runs verify training and checkpoint reload, not policy quality.
